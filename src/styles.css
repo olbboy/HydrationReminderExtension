@@ -9,31 +9,31 @@
 
 @layer base {
   :root {
-    --background: 210 50% 98%;
-    --foreground: 222 47% 11%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    /* Default theme (blue) */
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #1e293b;
+    --border: #e2e8f0;
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --destructive: #ef4444;
+    --muted-foreground: #64748b;
+    --themes-blue: #3b82f6;
+    --themes-green: #10b981;
+    --themes-purple: #8b5cf6;
+    --themes-orange: #f97316;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 201 89% 54%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 201 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
 
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 201 89% 54%;
 
@@ -41,61 +41,47 @@
     --radius-md: 0.5rem;
     --radius-lg: 0.8rem;
     
-    /* New theme variables */
-    --theme-blue: 201 89% 54%;
-    --theme-green: 142 71% 45%;
-    --theme-purple: 262 83% 58%;
-    --theme-orange: 27 96% 61%;
-    
     /* New animation variables */
     --water-wave-height: 10px;
     --water-wave-speed: 1.5s;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 15%;
-    --card-foreground: 210 40% 98%;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+    --border: #334155;
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --card: #1e293b;
+    --card-foreground: #f8fafc;
+    --destructive: #ef4444;
+    --muted-foreground: #94a3b8;
 
     --popover: 222 47% 13%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 201 89% 54%;
-    --primary-foreground: 222 47% 11%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 25%;
     --input: 217.2 32.6% 20%;
-    --ring: 201 89% 54%;
   }
   
   /* New theme variants */
   .theme-green {
-    --primary: var(--theme-green);
-    --ring: var(--theme-green);
+    --primary: var(--themes-green);
+    --ring: var(--themes-green);
   }
   
   .theme-purple {
-    --primary: var(--theme-purple);
-    --ring: var(--theme-purple);
+    --primary: var(--themes-purple);
+    --ring: var(--themes-purple);
   }
   
   .theme-orange {
-    --primary: var(--theme-orange);
-    --ring: var(--theme-orange);
+    --primary: var(--themes-orange);
+    --ring: var(--themes-orange);
   }
 }
 
@@ -133,7 +119,7 @@
   }
   
   .btn-water {
-    @apply bg-water text-water-foreground shadow hover:bg-water-dark relative overflow-hidden;
+    @apply bg-primary/10 text-primary hover:bg-primary/20 relative overflow-hidden;
   }
   
   .btn-icon {
@@ -177,29 +163,28 @@
   
   /* New: Water Bottle Visualization */
   .water-bottle {
-    @apply relative h-60 w-32 mx-auto mb-4 rounded-b-2xl rounded-t-lg overflow-hidden border-2 border-primary;
+    @apply relative w-32 h-64 mx-auto mb-6 rounded-3xl border-4 border-primary/30 overflow-hidden bg-white/30 dark:bg-black/10;
   }
   
   .water-bottle-cap {
-    @apply w-16 h-5 mx-auto -mt-2 rounded-t-lg bg-primary/80;
+    @apply absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-6 bg-primary/30 rounded-t-xl;
   }
   
   .water-fill {
-    @apply absolute bottom-0 left-0 right-0 bg-primary transition-[height] duration-1000 ease-out rounded-b-xl;
+    @apply absolute bottom-0 w-full bg-primary/70 rounded-b-xl;
   }
   
   .water-wave {
-    @apply absolute top-0 left-0 w-[200%] h-[10px];
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C150,20 300,0 450,20 C600,40 750,20 900,40 C1050,60 1200,40 1200,40 L1200,120 L0,120 Z' fill='white' opacity='0.3'/%3E%3C/svg%3E");
-    animation: wave var(--water-wave-speed) linear infinite;
+    @apply absolute top-0 left-0 w-full h-6 bg-primary/90;
+    animation: wave 2s infinite linear;
   }
   
   .water-bottle-markers {
-    @apply absolute inset-0 flex flex-col justify-between py-2 px-1 pointer-events-none;
+    @apply absolute inset-0 flex flex-col justify-between py-8;
   }
   
   .water-bottle-marker {
-    @apply relative h-0.5 w-full;
+    @apply relative border-t border-dashed border-secondary-foreground/20 h-0;
   }
   
   .water-bottle-marker::before {
@@ -207,42 +192,37 @@
   }
   
   .water-bottle-marker-label {
-    @apply absolute right-full -top-2 text-[10px] text-primary mr-4;
+    @apply absolute -top-3 -right-9 text-xs text-muted-foreground;
   }
   
   /* New: Circular Progress */  
   .circular-progress {
-    @apply relative w-32 h-32;
+    @apply relative w-full h-full flex items-center justify-center;
   }
   
   .circular-progress svg {
-    @apply w-full h-full rotate-[-90deg];
+    @apply transform -rotate-90;
   }
   
   .circular-progress-bg {
-    @apply stroke-secondary;
-    stroke-width: 10px;
-    fill: none;
+    @apply fill-none stroke-secondary stroke-[8px];
   }
   
   .circular-progress-fill {
-    @apply stroke-primary transition-all duration-1000 ease-out;
-    stroke-width: 10px;
-    stroke-linecap: round;
-    fill: none;
+    @apply fill-none stroke-primary stroke-[8px] transition-all duration-1000 ease-out;
   }
   
   .circular-progress-text {
-    @apply absolute inset-0 flex items-center justify-center flex-col;
+    @apply absolute flex flex-col items-center justify-center;
   }
   
   /* Progress Bar - Enhanced */
   .progress-container {
-    @apply relative w-full h-3 overflow-hidden rounded-full bg-secondary;
+    @apply w-full h-3 bg-secondary rounded-full overflow-hidden;
   }
   
   .progress-value {
-    @apply h-full bg-primary transition-all duration-500 ease-in-out;
+    @apply h-full bg-primary transition-all duration-500 ease-out;
   }
   
   /* Tabs - Enhanced */
@@ -251,13 +231,15 @@
   }
   
   .tabs-list {
-    @apply inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground;
+    @apply flex border-b border-border mb-4;
   }
   
   .tab-trigger {
-    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium 
-    transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 
-    focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow;
+    @apply py-2 px-3 border-b-2 border-transparent font-medium text-muted-foreground hover:text-foreground transition-colors;
+  }
+  
+  .tab-trigger[data-state="active"] {
+    @apply border-primary text-foreground;
   }
   
   .tab-content {
@@ -276,11 +258,11 @@
 
   /* New: Streak display */
   .streak-display {
-    @apply flex items-center gap-1.5 py-1 px-2 rounded-full bg-primary/10 text-primary text-xs font-medium;
+    @apply p-1 px-2 rounded-full bg-secondary text-sm font-medium;
   }
   
   .streak-flame {
-    @apply animate-pulse;
+    @apply mr-1 animate-pulse;
   }
   
   /* Toast - Enhanced with animations */
@@ -305,63 +287,37 @@
   
   /* Form Controls - Enhanced */
   .form-item {
-    @apply flex flex-col space-y-1.5 mb-3;
+    @apply mb-4;
   }
   
   .form-label {
-    @apply text-sm font-medium leading-none;
+    @apply block font-medium mb-2;
   }
   
   .form-control {
-    @apply flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm 
-    transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium 
-    placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 
-    focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50;
+    @apply w-full p-2 rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/25;
   }
   
   .form-description {
-    @apply text-[0.8rem] text-muted-foreground;
+    @apply text-muted-foreground text-xs;
   }
   
   /* Switch */
   .switch {
-    height: 20px;
-    width: 36px;
-    cursor: pointer;
-    appearance: none;
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
-    background-color: hsl(var(--muted));
-  }
-  
-  .switch:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 0 4px hsl(var(--ring));
-  }
-  
-  .switch:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-  
-  .switch[data-checked] {
-    background-color: hsl(var(--primary));
+    @apply sr-only;
   }
   
   /* New Stats Display */
   .stat-card {
-    @apply flex flex-col items-center justify-center p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors;
+    @apply flex flex-col items-center justify-center bg-secondary p-2 rounded-md;
   }
   
   .stat-value {
-    @apply text-lg font-semibold;
+    @apply font-semibold text-lg;
   }
   
   .stat-label {
-    @apply text-xs text-muted-foreground;
+    @apply text-muted-foreground text-xs;
   }
   
   .stat-trend {
@@ -384,7 +340,7 @@
   }
 
   .ripple {
-    @apply after:content-[''] after:absolute after:w-5 after:h-5 after:bg-white after:opacity-40 after:rounded-full after:animate-ripple;
+    @apply absolute rounded-full bg-white/40 scale-0 animate-ripple pointer-events-none;
   }
   
   .glass {
@@ -392,40 +348,40 @@
   }
   
   .scrollbar-hidden {
-    @apply scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
   }
 }
 
 /* ANIMATIONS */
 @keyframes wave {
   0% {
-    transform: translateX(0);
-  }
-  100% {
     transform: translateX(-50%);
   }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
+  100% {
+    transform: translateX(0%);
   }
 }
 
-@keyframes pulse-ring {
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes bounceIn {
   0% {
-    transform: scale(0.7);
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.2;
+    opacity: 0;
+    transform: scale(0.8);
   }
   100% {
-    transform: scale(1.8);
-    opacity: 0;
+    opacity: 1;
+    transform: scale(1);
   }
 }
 

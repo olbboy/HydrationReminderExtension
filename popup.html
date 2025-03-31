@@ -10,35 +10,72 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="app" class="p-4 min-h-[500px]">
-    <!-- Header -->
+  <div id="app" class="p-4 min-h-[500px] relative">
+    <!-- Header with new AI Assistant Button -->
     <header class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">
         <div class="water-drop">💧</div>
         <h1 class="text-xl font-bold">Hydration Reminder</h1>
       </div>
-      <button id="theme-toggle" aria-label="Toggle theme" class="p-2 rounded-full hover:bg-secondary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon hidden dark:block"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun block dark:hidden"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-      </button>
+      <div class="flex items-center gap-2">
+        <button id="ai-assistant" aria-label="AI Assistant" class="p-2 rounded-full hover:bg-secondary text-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2"/><path d="M12 8v4l3 3"/></svg>
+        </button>
+        <button id="theme-toggle" aria-label="Toggle theme" class="p-2 rounded-full hover:bg-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden dark:block"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="block dark:hidden"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        </button>
+      </div>
     </header>
+    
+    <!-- New: Streak Counter -->
+    <div class="streak-display mb-3 inline-flex">
+      <span class="streak-flame">🔥</span>
+      <span id="streak-count">0</span>
+      <span class="ml-1">day streak</span>
+    </div>
 
     <!-- Main Tabs -->
     <div class="tabs" id="main-tabs">
       <div class="tabs-list w-full" role="tablist" aria-orientation="horizontal">
         <button class="tab-trigger flex-1" role="tab" data-state="active" data-tab="dashboard">Dashboard</button>
+        <button class="tab-trigger flex-1" role="tab" data-tab="insights">Insights</button>
         <button class="tab-trigger flex-1" role="tab" data-tab="settings">Settings</button>
-        <button class="tab-trigger flex-1" role="tab" data-tab="stats">Statistics</button>
       </div>
       
-      <!-- Dashboard Tab -->
+      <!-- Dashboard Tab - Enhanced with Water Bottle Visualization -->
       <div class="tab-content" data-tab-content="dashboard" data-state="active">
+        <!-- Water bottle progress visualization -->
+        <div class="water-bottle">
+          <div class="water-bottle-cap"></div>
+          <div id="water-fill" class="water-fill" style="height: 0%">
+            <div class="water-wave"></div>
+          </div>
+          
+          <div class="water-bottle-markers">
+            <div class="water-bottle-marker">
+              <span class="water-bottle-marker-label">2L</span>
+            </div>
+            <div class="water-bottle-marker">
+              <span class="water-bottle-marker-label">1.5L</span>
+            </div>
+            <div class="water-bottle-marker">
+              <span class="water-bottle-marker-label">1L</span>
+            </div>
+            <div class="water-bottle-marker">
+              <span class="water-bottle-marker-label">0.5L</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Intake summary card -->
         <div class="card mb-4">
           <div class="card-header">
             <div class="flex items-center justify-between">
-              <h2 class="card-title">Today's Progress</h2>
+              <h2 class="card-title">Today's Hydration</h2>
               <span class="text-sm text-muted-foreground" id="date-display"></span>
             </div>
+            <p class="card-description" id="hydration-feedback">Add your first drink to start tracking!</p>
           </div>
           <div class="card-content">
             <div class="flex justify-between items-center mb-2">
@@ -49,12 +86,29 @@
             <div class="progress-container mb-4">
               <div id="progress-fill" class="progress-value" style="width: 0%"></div>
             </div>
+            
+            <!-- New: Hydration Detail Cards -->
+            <div class="grid grid-cols-3 gap-2 mt-4">
+              <div class="stat-card">
+                <span class="stat-value" id="remaining-intake">2000</span>
+                <span class="stat-label">Remaining</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="drink-count">0</span>
+                <span class="stat-label">Drinks</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="hydration-score">0</span>
+                <span class="stat-label">Score</span>
+              </div>
+            </div>
           </div>
         </div>
         
+        <!-- Quick Add with improved UX -->
         <div class="card mb-4">
           <div class="card-header">
-            <h2 class="card-title">Quick Add</h2>
+            <h2 class="card-title">Add Water</h2>
           </div>
           <div class="card-content">
             <div class="grid grid-cols-4 gap-2 mb-4">
@@ -62,6 +116,22 @@
               <button class="water-btn btn btn-water h-14 text-lg ripple" data-amount="250">250ml</button>
               <button class="water-btn btn btn-water h-14 text-lg ripple" data-amount="500">500ml</button>
               <button id="custom-amount" class="btn btn-secondary h-14 text-lg">Custom</button>
+            </div>
+            
+            <!-- Drink type selection - New feature -->
+            <div class="mt-2 mb-3">
+              <label class="form-label mb-1">Drink Type</label>
+              <div class="flex gap-2">
+                <button class="btn btn-secondary flex-1 py-1 active" data-drink-type="water">
+                  <span class="mr-1">💧</span> Water
+                </button>
+                <button class="btn btn-secondary flex-1 py-1" data-drink-type="coffee">
+                  <span class="mr-1">☕</span> Coffee
+                </button>
+                <button class="btn btn-secondary flex-1 py-1" data-drink-type="tea">
+                  <span class="mr-1">🍵</span> Tea
+                </button>
+              </div>
             </div>
             
             <div id="custom-input" class="hidden mt-2 flex gap-2">
@@ -72,23 +142,109 @@
           </div>
         </div>
         
+        <!-- Recent Activity with more details -->
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">Recent Activity</h2>
           </div>
           <div class="card-content">
-            <div id="activity-log" class="text-sm space-y-2 max-h-[150px] overflow-y-auto">
+            <div id="activity-log" class="text-sm space-y-2 max-h-[120px] overflow-y-auto scrollbar-hidden">
               <div class="text-center text-muted-foreground">No activity yet today</div>
             </div>
           </div>
         </div>
       </div>
       
-      <!-- Settings Tab -->
-      <div class="tab-content hidden" data-tab-content="settings">
+      <!-- Insights Tab - New tab replacing Statistics for more advanced analytics -->
+      <div class="tab-content hidden" data-tab-content="insights">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h2 class="card-title">Hydration Insights</h2>
+          </div>
+          <div class="card-content">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="circular-progress">
+                <svg viewBox="0 0 100 100">
+                  <circle class="circular-progress-bg" cx="50" cy="50" r="40"></circle>
+                  <circle id="weekly-progress-circle" class="circular-progress-fill" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                </svg>
+                <div class="circular-progress-text">
+                  <div id="weekly-completion" class="text-2xl font-bold">0%</div>
+                  <div class="text-xs text-muted-foreground">Weekly Goal</div>
+                </div>
+              </div>
+              
+              <div class="flex flex-col justify-center">
+                <div class="mb-2">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm">Weekly Average</span>
+                    <span id="weekly-avg-ml" class="text-sm font-medium">0 ml</span>
+                  </div>
+                  <div class="progress-container h-2">
+                    <div id="weekly-avg-progress" class="progress-value" style="width: 0%"></div>
+                  </div>
+                </div>
+                
+                <div class="mb-2">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm">Consistency</span>
+                    <span id="consistency-percent" class="text-sm font-medium">0%</span>
+                  </div>
+                  <div class="progress-container h-2">
+                    <div id="consistency-progress" class="progress-value" style="width: 0%"></div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm">Optimal Timing</span>
+                    <span id="timing-percent" class="text-sm font-medium">0%</span>
+                  </div>
+                  <div class="progress-container h-2">
+                    <div id="timing-progress" class="progress-value" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- AI-generated insights - New feature -->
+            <div class="bg-secondary/50 rounded-md p-3 mb-4">
+              <h3 class="text-sm font-medium flex items-center gap-1 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2"/><path d="M12 8v4l3 3"/></svg>
+                Personalized Insight
+              </h3>
+              <p id="ai-insight" class="text-sm text-muted-foreground">Your hydration data is being analyzed. Keep drinking water to receive personalized insights!</p>
+            </div>
+          </div>
+        </div>
+        
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Reminder Settings</h2>
+            <h2 class="card-title">7-Day History</h2>
+          </div>
+          <div class="card-content">
+            <div id="chart-container" class="h-[180px] pt-2">
+              <!-- Chart will be generated here -->
+            </div>
+            
+            <!-- New: Best day indicator -->
+            <div class="flex items-center justify-between text-sm mt-2 px-2">
+              <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-primary flex-shrink-0"></span>
+                <span class="text-muted-foreground">Best day:</span>
+                <span id="best-day" class="font-medium">N/A</span>
+              </div>
+              <div id="best-amount" class="font-medium">0 ml</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Settings Tab - Enhanced with new options -->
+      <div class="tab-content hidden" data-tab-content="settings">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h2 class="card-title">Reminders & Goals</h2>
           </div>
           <div class="card-content space-y-4">
             <div class="form-item">
@@ -109,8 +265,28 @@
               <input type="number" id="daily-target" min="500" step="100" class="form-control">
             </div>
             
+            <!-- New: Smart goal adjustment -->
             <div class="flex items-center justify-between mb-4">
-              <span class="form-label">Enable Notifications</span>
+              <div>
+                <span class="form-label">Smart Goal Adjustment</span>
+                <p class="form-description">Let AI adjust your goal based on activity</p>
+              </div>
+              <div class="flex items-center">
+                <input id="smart-goals" type="checkbox" class="switch" />
+                <div class="relative flex h-5 w-9 cursor-pointer rounded-full transition-colors 
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 
+                     focus-visible:ring-offset-background">
+                  <div class="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 
+                       transition-transform data-[checked]:translate-x-4 translate-x-0.5"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <span class="form-label">Enable Notifications</span>
+                <p class="form-description">Receive reminders to drink water</p>
+              </div>
               <div class="flex items-center">
                 <input id="notifications-enabled" type="checkbox" class="switch" />
                 <div class="relative flex h-5 w-9 cursor-pointer rounded-full transition-colors 
@@ -123,7 +299,10 @@
             </div>
             
             <div class="flex items-center justify-between mb-4">
-              <span class="form-label">Pause in Fullscreen Mode</span>
+              <div>
+                <span class="form-label">Pause in Fullscreen Mode</span>
+                <p class="form-description">Suspend reminders during fullscreen apps</p>
+              </div>
               <div class="flex items-center">
                 <input id="fullscreen-pause" type="checkbox" class="switch" />
                 <div class="relative flex h-5 w-9 cursor-pointer rounded-full transition-colors 
@@ -134,7 +313,14 @@
                 </div>
               </div>
             </div>
-            
+          </div>
+        </div>
+        
+        <div class="card mb-4">
+          <div class="card-header">
+            <h2 class="card-title">Sound & Appearance</h2>
+          </div>
+          <div class="card-content space-y-4">
             <div class="form-item">
               <label for="sound-choice" class="form-label">Notification Sound</label>
               <div class="flex gap-2">
@@ -146,7 +332,7 @@
                   <option value="stream">Stream</option>
                 </select>
                 <button id="test-sound" class="btn btn-secondary px-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
                 </button>
               </div>
             </div>
@@ -154,58 +340,135 @@
             <div class="form-item">
               <label for="volume-slider" class="form-label">Volume</label>
               <div class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-1"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                 <input type="range" id="volume-slider" min="0" max="1" step="0.1" class="w-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
               </div>
             </div>
             
-            <button id="save-settings" class="btn btn-primary w-full mt-4">
+            <!-- New: Color Theme Selection -->
+            <div class="form-item">
+              <label class="form-label">Color Theme</label>
+              <div class="grid grid-cols-4 gap-2 mt-1">
+                <button class="h-8 rounded-md bg-themes-blue border-2 border-transparent data-[active=true]:border-foreground" data-theme="blue" data-active="true"></button>
+                <button class="h-8 rounded-md bg-themes-green border-2 border-transparent" data-theme="green"></button>
+                <button class="h-8 rounded-md bg-themes-purple border-2 border-transparent" data-theme="purple"></button>
+                <button class="h-8 rounded-md bg-themes-orange border-2 border-transparent" data-theme="orange"></button>
+              </div>
+            </div>
+            
+            <button id="save-settings" class="btn btn-primary w-full mt-6">
               Save Settings
             </button>
           </div>
         </div>
-      </div>
-      
-      <!-- Statistics Tab -->
-      <div class="tab-content hidden" data-tab-content="stats">
-        <div class="card mb-4">
+        
+        <!-- New: Data Sync Options -->
+        <div class="card">
           <div class="card-header">
-            <h2 class="card-title">Quick Stats</h2>
+            <h2 class="card-title">Data Management</h2>
           </div>
-          <div class="card-content">
-            <div class="grid grid-cols-3 gap-2">
-              <div class="text-center p-3 bg-secondary rounded-md">
-                <div class="text-sm text-muted-foreground">Today</div>
-                <div id="today-stat" class="font-semibold">0 ml</div>
+          <div class="card-content space-y-4">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <span class="form-label">Sync Data to Cloud</span>
+                <p class="form-description">Save and sync across devices</p>
               </div>
-              <div class="text-center p-3 bg-secondary rounded-md">
-                <div class="text-sm text-muted-foreground">Yesterday</div>
-                <div id="yesterday-stat" class="font-semibold">0 ml</div>
+              <div class="flex items-center">
+                <input id="cloud-sync" type="checkbox" class="switch" />
+                <div class="relative flex h-5 w-9 cursor-pointer rounded-full transition-colors 
+                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 
+                     focus-visible:ring-offset-background">
+                  <div class="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 
+                       transition-transform data-[checked]:translate-x-4 translate-x-0.5"></div>
+                </div>
               </div>
-              <div class="text-center p-3 bg-secondary rounded-md">
-                <div class="text-sm text-muted-foreground">7-Day Avg</div>
-                <div id="weekly-avg-stat" class="font-semibold">0 ml</div>
-              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2">
+              <button id="export-data" class="btn btn-secondary">
+                Export Data
+              </button>
+              <button id="import-data" class="btn btn-secondary">
+                Import Data
+              </button>
+            </div>
+            
+            <button id="reset-data" class="btn w-full text-destructive hover:bg-destructive/10 mt-2">
+              Reset All Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- New: AI Assistant Dialog -->
+    <div id="ai-assistant-dialog" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+      <div class="bg-card border border-border rounded-lg w-[90%] max-w-md max-h-[80%] overflow-hidden flex flex-col animate-bounce-in">
+        <div class="flex items-center justify-between p-4 border-b border-border">
+          <h3 class="font-semibold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2"/><path d="M12 8v4l3 3"/></svg>
+            Hydration Assistant
+          </h3>
+          <button id="close-assistant" class="rounded-full p-1 hover:bg-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="flex-1 p-4 overflow-y-auto">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2"/><path d="M12 8v4l3 3"/></svg>
+            </div>
+            <div>
+              <p class="text-sm">
+                Hello! I'm your Hydration Assistant. I can help analyze your hydration patterns and provide personalized recommendations.
+              </p>
+              <p class="text-sm mt-2">
+                Based on your recent data:
+              </p>
+              <ul class="text-sm mt-1 ml-4 list-disc space-y-1">
+                <li>Your average daily intake is <span id="ai-avg-intake">0ml</span></li>
+                <li>Your optimal drinking times appear to be <span id="ai-optimal-times">morning</span></li>
+                <li>You're currently <span id="ai-intake-assessment">below</span> your target</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="flex items-start gap-3 mb-4">
+            <div class="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c5.5 0 10 4.5 10 10s-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2"/><path d="M12 8v4l3 3"/></svg>
+            </div>
+            <div>
+              <p class="text-sm">
+                My recommendations for you:
+              </p>
+              <ul class="text-sm mt-1 ml-4 list-disc space-y-1" id="ai-recommendations">
+                <li>Start with 250ml of water when you wake up</li>
+                <li>Set a reminder every 90 minutes during your active hours</li>
+                <li>Consider tracking your water intake for a week to establish a baseline</li>
+              </ul>
             </div>
           </div>
         </div>
         
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Weekly Chart</h2>
-          </div>
-          <div class="card-content">
-            <div id="chart-container" class="h-[180px] pt-2">
-              <!-- Chart will be generated here -->
-            </div>
+        <div class="p-4 border-t border-border">
+          <div class="flex gap-2">
+            <button class="btn btn-primary flex-1" id="generate-recommendation">
+              Generate Recommendations
+            </button>
+            <button class="btn btn-secondary flex-1" id="export-insights">
+              Export Insights
+            </button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Toast Notification System -->
   <div id="toast-container"></div>
+  
+  <!-- Scripts -->
   <script type="module" src="src/popup.js"></script>
 </body>
 </html> 
