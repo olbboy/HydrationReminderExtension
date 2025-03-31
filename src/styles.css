@@ -40,6 +40,16 @@
     --radius-sm: 0.3rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.8rem;
+    
+    /* New theme variables */
+    --theme-blue: 201 89% 54%;
+    --theme-green: 142 71% 45%;
+    --theme-purple: 262 83% 58%;
+    --theme-orange: 27 96% 61%;
+    
+    /* New animation variables */
+    --water-wave-height: 10px;
+    --water-wave-speed: 1.5s;
   }
 
   .dark {
@@ -71,6 +81,22 @@
     --input: 217.2 32.6% 20%;
     --ring: 201 89% 54%;
   }
+  
+  /* New theme variants */
+  .theme-green {
+    --primary: var(--theme-green);
+    --ring: var(--theme-green);
+  }
+  
+  .theme-purple {
+    --primary: var(--theme-purple);
+    --ring: var(--theme-purple);
+  }
+  
+  .theme-orange {
+    --primary: var(--theme-orange);
+    --ring: var(--theme-orange);
+  }
 }
 
 @layer base {
@@ -91,10 +117,11 @@
 }
 
 @layer components {
-  /* Button Styles */
+  /* Button Styles - Enhanced */
   .btn {
     @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors 
-    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50;
+    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50
+    active:scale-[0.98] active:opacity-90;
   }
   
   .btn-primary {
@@ -109,9 +136,13 @@
     @apply bg-water text-water-foreground shadow hover:bg-water-dark relative overflow-hidden;
   }
   
-  /* Card Styles */
+  .btn-icon {
+    @apply h-9 w-9 p-0 flex items-center justify-center;
+  }
+  
+  /* Card Styles - Enhanced */
   .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow;
+    @apply rounded-lg border bg-card text-card-foreground shadow transition-all hover:shadow-md;
   }
   
   .card-header {
@@ -134,7 +165,78 @@
     @apply flex items-center p-4 pt-0;
   }
   
-  /* Progress Bar */
+  /* New Component: Sidebar */
+  .sidebar {
+    @apply fixed left-0 top-0 h-full w-16 bg-card border-r border-border flex flex-col items-center py-4 gap-6;
+  }
+
+  .sidebar-item {
+    @apply w-10 h-10 rounded-md flex items-center justify-center cursor-pointer hover:bg-primary/10 
+    transition-colors text-muted-foreground data-[active=true]:bg-primary/20 data-[active=true]:text-primary;
+  }
+  
+  /* New: Water Bottle Visualization */
+  .water-bottle {
+    @apply relative h-60 w-32 mx-auto mb-4 rounded-b-2xl rounded-t-lg overflow-hidden border-2 border-primary;
+  }
+  
+  .water-bottle-cap {
+    @apply w-16 h-5 mx-auto -mt-2 rounded-t-lg bg-primary/80;
+  }
+  
+  .water-fill {
+    @apply absolute bottom-0 left-0 right-0 bg-primary transition-[height] duration-1000 ease-out rounded-b-xl;
+  }
+  
+  .water-wave {
+    @apply absolute top-0 left-0 w-[200%] h-[10px];
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C150,20 300,0 450,20 C600,40 750,20 900,40 C1050,60 1200,40 1200,40 L1200,120 L0,120 Z' fill='white' opacity='0.3'/%3E%3C/svg%3E");
+    animation: wave var(--water-wave-speed) linear infinite;
+  }
+  
+  .water-bottle-markers {
+    @apply absolute inset-0 flex flex-col justify-between py-2 px-1 pointer-events-none;
+  }
+  
+  .water-bottle-marker {
+    @apply relative h-0.5 w-full;
+  }
+  
+  .water-bottle-marker::before {
+    @apply content-[''] absolute right-full -top-1 w-3 h-0.5 bg-primary/50;
+  }
+  
+  .water-bottle-marker-label {
+    @apply absolute right-full -top-2 text-[10px] text-primary mr-4;
+  }
+  
+  /* New: Circular Progress */  
+  .circular-progress {
+    @apply relative w-32 h-32;
+  }
+  
+  .circular-progress svg {
+    @apply w-full h-full rotate-[-90deg];
+  }
+  
+  .circular-progress-bg {
+    @apply stroke-secondary;
+    stroke-width: 10px;
+    fill: none;
+  }
+  
+  .circular-progress-fill {
+    @apply stroke-primary transition-all duration-1000 ease-out;
+    stroke-width: 10px;
+    stroke-linecap: round;
+    fill: none;
+  }
+  
+  .circular-progress-text {
+    @apply absolute inset-0 flex items-center justify-center flex-col;
+  }
+  
+  /* Progress Bar - Enhanced */
   .progress-container {
     @apply relative w-full h-3 overflow-hidden rounded-full bg-secondary;
   }
@@ -143,7 +245,7 @@
     @apply h-full bg-primary transition-all duration-500 ease-in-out;
   }
   
-  /* Tabs */
+  /* Tabs - Enhanced */
   .tabs {
     @apply flex flex-col space-y-2;
   }
@@ -162,23 +264,46 @@
     @apply pt-2;
   }
   
-  /* Quick Add Buttons */
+  /* Quick Add Buttons - Enhanced with feedback animation */
   .water-amount {
     @apply relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-water text-sm font-medium text-water-foreground;
   }
   
-  /* Water Animation */
+  /* Water Animation - Enhanced */
   .water-drop {
     @apply w-8 h-8 text-water animate-wave;
   }
+
+  /* New: Streak display */
+  .streak-display {
+    @apply flex items-center gap-1.5 py-1 px-2 rounded-full bg-primary/10 text-primary text-xs font-medium;
+  }
   
-  /* Toast */
+  .streak-flame {
+    @apply animate-pulse;
+  }
+  
+  /* Toast - Enhanced with animations */
   .toast {
     @apply fixed bottom-4 right-4 z-50 flex max-w-md items-center justify-between space-x-2 overflow-hidden 
     rounded-md border p-4 shadow-lg animate-toast-in bg-card text-foreground;
   }
   
-  /* Form Controls */
+  /* New: Achievement Badge */
+  .achievement-badge {
+    @apply relative flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 
+    hover:scale-110 transition-transform cursor-help;
+  }
+  
+  .achievement-badge-icon {
+    @apply text-primary text-lg;
+  }
+  
+  .achievement-locked {
+    @apply opacity-40 grayscale;
+  }
+  
+  /* Form Controls - Enhanced */
   .form-item {
     @apply flex flex-col space-y-1.5 mb-3;
   }
@@ -202,7 +327,6 @@
   .switch {
     height: 20px;
     width: 36px;
-    shrink: 0;
     cursor: pointer;
     appearance: none;
     border-radius: 9999px;
@@ -226,6 +350,31 @@
   .switch[data-checked] {
     background-color: hsl(var(--primary));
   }
+  
+  /* New Stats Display */
+  .stat-card {
+    @apply flex flex-col items-center justify-center p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors;
+  }
+  
+  .stat-value {
+    @apply text-lg font-semibold;
+  }
+  
+  .stat-label {
+    @apply text-xs text-muted-foreground;
+  }
+  
+  .stat-trend {
+    @apply flex items-center text-xs;
+  }
+  
+  .stat-trend-up {
+    @apply text-green-500;
+  }
+  
+  .stat-trend-down {
+    @apply text-red-500;
+  }
 }
 
 /* UTILITY CLASSES */
@@ -237,4 +386,53 @@
   .ripple {
     @apply after:content-[''] after:absolute after:w-5 after:h-5 after:bg-white after:opacity-40 after:rounded-full after:animate-ripple;
   }
+  
+  .glass {
+    @apply backdrop-blur-md bg-white/30 dark:bg-black/30;
+  }
+  
+  .scrollbar-hidden {
+    @apply scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40;
+  }
+}
+
+/* ANIMATIONS */
+@keyframes wave {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 } 

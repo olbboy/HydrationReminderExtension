@@ -55,6 +55,17 @@ module.exports = {
           dark: "#0c7cd5",
           foreground: "white",
         },
+        health: {
+          good: "#22c55e",
+          moderate: "#f59e0b",
+          poor: "#ef4444"
+        },
+        themes: {
+          blue: "hsl(var(--theme-blue))",
+          green: "hsl(var(--theme-green))",
+          purple: "hsl(var(--theme-purple))",
+          orange: "hsl(var(--theme-orange))",
+        }
       },
       borderRadius: {
         lg: "var(--radius-lg)",
@@ -84,6 +95,28 @@ module.exports = {
           "0%": { transform: "translateY(0)", opacity: 1 },
           "100%": { transform: "translateY(100%)", opacity: 0 },
         },
+        "float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "pulse-ring": {
+          "0%": { transform: "scale(0.7)", opacity: 0.5 },
+          "50%": { opacity: 0.2 },
+          "100%": { transform: "scale(1.8)", opacity: 0 },
+        },
+        "slide-in-right": {
+          "0%": { transform: "translateX(100%)", opacity: 0 },
+          "100%": { transform: "translateX(0)", opacity: 1 },
+        },
+        "slide-out-right": {
+          "0%": { transform: "translateX(0)", opacity: 1 },
+          "100%": { transform: "translateX(100%)", opacity: 0 },
+        },
+        "bounce-in": {
+          "0%": { transform: "scale(0.8)", opacity: 0 },
+          "70%": { transform: "scale(1.1)", opacity: 1 },
+          "100%": { transform: "scale(1)", opacity: 1 },
+        },
       },
       animation: {
         "ripple": "ripple 0.8s ease-out",
@@ -91,8 +124,24 @@ module.exports = {
         "drop": "drop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
         "toast-in": "toast-in 0.3s forwards",
         "toast-out": "toast-out 0.3s forwards",
+        "float": "float 3s ease-in-out infinite",
+        "pulse-ring": "pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite",
+        "slide-in-right": "slide-in-right 0.3s forwards",
+        "slide-out-right": "slide-out-right 0.3s forwards",
+        "bounce-in": "bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+      },
+      backgroundImage: {
+        'wave-pattern': "url('data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1200 120\" preserveAspectRatio=\"none\"%3E%3Cpath d=\"M0,0 C150,20 300,0 450,20 C600,40 750,20 900,40 C1050,60 1200,40 1200,40 L1200,120 L0,120 Z\" fill=\"white\" opacity=\"0.3\"/%3E%3C/svg%3E')",
+      },
+      screens: {
+        'xs': '400px',
+      },
+      scrollbar: {
+        thin: '3px',
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwind-scrollbar'),
+  ],
 }; 
