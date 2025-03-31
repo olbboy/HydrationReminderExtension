@@ -4,32 +4,35 @@ import { resolve } from 'path';
 export default defineConfig({
   build: {
     outDir: 'dist',
+    emptyOutDir: true,
+    minify: true,
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'popup.html'),
         background: resolve(__dirname, 'src/background.js'),
-        contentScript: resolve(__dirname, 'src/contentScript.js')
+        contentScript: resolve(__dirname, 'src/contentScript.js'),
+        styles: resolve(__dirname, 'src/styles.css')
       },
       output: {
-        entryFileNames: (chunk) => {
-          return chunk.name === 'background' || chunk.name === 'contentScript' 
-            ? 'src/[name].js' 
-            : '[name].js';
-        },
-        chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name.endsWith('.css')) {
-            return 'styles/style[extname]';
+        entryFileNames: `[name].js`,
+        chunkFileNames: `[name].js`,
+        assetFileNames: (info) => {
+          if (info.name.endsWith('.css')) {
+            return 'assets/[name][extname]';
           }
           return 'assets/[name][extname]';
         }
       }
     },
-    cssCodeSplit: false,
+    assetsInlineLimit: 0
+  },
+  css: {
+    devSourcemap: true
   },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
     }
-  }
+  },
+  publicDir: 'public'
 }); 

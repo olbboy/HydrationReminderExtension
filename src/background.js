@@ -9,7 +9,8 @@ const DEFAULT_SETTINGS = {
   fullScreenPause: true,
   colorTheme: 'blue',
   smartGoals: false,
-  cloudSync: false
+  cloudSync: false,
+  aiProvider: 'openai' // Added for Google Gemini API support
 };
 
 const NOTIFICATION_ID = 'hydration-reminder';
@@ -85,6 +86,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
     });
     return true; // Keep the message channel open for async response
+  }
+  
+  // Handle API key storage
+  if (message.action === 'saveApiKey') {
+    chrome.storage.local.set({ apiKey: message.key }, () => {
+      sendResponse({ success: true });
+    });
+    return true; // Indicate async response
+  }
+  
+  // Fetch OpenAI recommendations
+  if (message.action === 'generateAIRecommendations') {
+    generateRecommendations(message.data, message.apiKey)
+      .then(recommendations => {
+        sendResponse({ success: true, recommendations });
+      })
+      .catch(error => {
+        console.error('Error generating recommendations:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true; // Indicate async response
   }
 });
 
@@ -275,4 +297,102 @@ async function checkAndResetForNewDay() {
 chrome.runtime.onStartup.addListener(() => {
   checkAndResetForNewDay();
   setupAlarm();
-}); 
+});
+
+// Generate recommendations via OpenAI or Gemini
+async function generateRecommendations(data, apiKey) {
+  if (!apiKey) {
+    throw new Error('API key is required');
+  }
+  
+  // Get AI model provider preference
+  const { settings } = await chrome.storage.sync.get('settings') || { settings: DEFAULT_SETTINGS };
+  const aiProvider = settings.aiProvider || 'openai'; // Default to OpenAI if not set
+  
+  // Create prompt based on hydration data
+  const prompt = `
+    As a hydration assistant, analyze this data and provide 3-4 personalized hydration recommendations:
+    ${JSON.stringify(data, null, 2)}
+    
+    Format each recommendation as a separate item in a list. Keep recommendations practical, specific, and actionable.
+  `;
+  
+  try {
+    if (aiProvider === 'openai') {
+      return await callOpenAI(prompt, apiKey);
+    } else if (aiProvider === 'gemini') {
+      return await callGemini(prompt, apiKey);
+    } else {
+      throw new Error('Invalid AI provider specified');
+    }
+  } catch (error) {
+    console.error(`${aiProvider} API error:`, error);
+    throw error;
+  }
+}
+
+// Call OpenAI API
+async function callOpenAI(prompt, apiKey) {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'system', content: 'You are a hydration assistant that provides personalized recommendations based on hydration data.' },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 300,
+      temperature: 0.7
+    })
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || 'Error calling OpenAI API');
+  }
+  
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// Call Google Gemini API
+async function callGemini(prompt, apiKey) {
+  const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: `You are a hydration assistant that provides personalized recommendations based on hydration data. ${prompt}`
+        }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 300,
+        topP: 0.8,
+        topK: 40
+      }
+    })
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error?.message || 'Error calling Gemini API');
+  }
+  
+  const data = await response.json();
+  
+  // Extract text from Gemini response format
+  if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+    return data.candidates[0].content.parts[0].text;
+  }
+  
+  throw new Error('Unexpected response format from Gemini API');
+} 

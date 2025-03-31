@@ -58,4 +58,22 @@ if (fs.existsSync(publicDir)) {
   copyDir(publicDir, destPublicDir);
 }
 
+// Copy thư mục audio
+console.log('Copying audio directory...');
+const audioDir = './audio';
+const destAudioDir = './dist/audio';
+
+if (fs.existsSync(audioDir)) {
+  if (!fs.existsSync(destAudioDir)) {
+    fs.mkdirSync(destAudioDir, { recursive: true });
+  }
+  
+  copyDir(audioDir, destAudioDir);
+}
+
+// Đảm bảo thư mục assets tồn tại trong dist
+if (!fs.existsSync('./dist/assets')) {
+  fs.mkdirSync('./dist/assets', { recursive: true });
+}
+
 console.log('Build process completed successfully!'); 

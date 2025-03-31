@@ -43,7 +43,7 @@
     
     /* New animation variables */
     --water-wave-height: 10px;
-    --water-wave-speed: 3s;
+    --water-wave-speed: 1.5s;
   }
 
   .dark {
@@ -360,13 +360,10 @@
 /* ANIMATIONS */
 @keyframes wave {
   0% {
-    transform: translateX(0) translateZ(0) scaleY(1);
-  }
-  50% {
-    transform: translateX(-25%) translateZ(0) scaleY(0.8);
+    transform: translateX(-50%);
   }
   100% {
-    transform: translateX(-50%) translateZ(0) scaleY(1);
+    transform: translateX(0%);
   }
 }
 
@@ -394,132 +391,4 @@
 
 .animate-pulse-ring {
   animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-}
-
-/* Bounce animation for dialog */
-@keyframes bounce-in {
-  0% {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  70% {
-    transform: scale(1.05);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-bounce-in {
-  animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-/* Style cho nút khẩn cấp */
-.emergency-recovery-button {
-  position: fixed;
-  bottom: 8px;
-  right: 8px;
-  background-color: #ef4444;
-  color: white;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  z-index: 9999;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.emergency-recovery-button:hover {
-  opacity: 1;
-}
-
-/* Style hiệu ứng sóng nước cải tiến */
-.water-fill {
-  position: relative;
-  border-radius: 0 0 20px 20px;
-  background-color: var(--color-primary);
-  width: 100%;
-  height: 0%;
-  bottom: 0;
-  transition: height 0.5s ease-out;
-  overflow: hidden;
-}
-
-.water-wave {
-  position: absolute;
-  top: -10px;
-  left: 0;
-  width: 200%;
-  height: 100%;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-.2-31.6z' fill='%23FFF' fill-opacity='0.2'/%3E%3C/svg%3E");
-  background-position: 0 bottom;
-  background-repeat: repeat-x;
-  animation: wave var(--water-wave-speed) infinite linear;
-}
-
-/* Overlay khi đứng app */
-.app-frozen-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 2rem;
-  text-align: center;
-}
-
-.app-frozen-overlay button {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-}
-
-/* Toasts cải tiến */
-.toast {
-  position: relative;
-  padding: 0.75rem 1rem;
-  color: white;
-  border-radius: 0.375rem;
-  margin-bottom: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  opacity: 0;
-  transform: translateY(1rem);
-  transition: opacity 0.3s, transform 0.3s;
-  max-width: 100%;
-  width: 300px;
-}
-
-.toast.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.toast-success {
-  background-color: #10b981;
-}
-
-.toast-error {
-  background-color: #ef4444;
-}
-
-.toast-warning {
-  background-color: #f59e0b;
-}
-
-.toast-info {
-  background-color: #3b82f6;
 } 

@@ -17,26 +17,29 @@
     }
   },
   "background": {
-    "service_worker": "src/background.js",
+    "service_worker": "background.js",
     "type": "module"
   },
   "permissions": [
-    "notifications",
     "storage",
     "alarms",
-    "system.display"
+    "notifications",
+    "https://api.openai.com/v1/*",
+    "https://generativelanguage.googleapis.com/v1/*"
   ],
-  "host_permissions": [],
+  "host_permissions": [
+    "https://api.openai.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/contentScript.js"],
-      "css": ["styles/style.css"]
+      "js": ["contentScript.js"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["public/sounds/*", "styles/*.css", "audio/*"],
+      "resources": ["public/sounds/*", "assets/*.css", "audio/*"],
       "matches": ["<all_urls>"]
     }
   ]
