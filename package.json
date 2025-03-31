@@ -1,0 +1,13 @@
+{
+  "name": "hydration-reminder",
+  "version": "1.0.0",
+  "description": "A Chrome extension to remind you to drink water and track your hydration",
+  "private": true,
+  "author": "Your Name",
+  "license": "MIT",
+  "scripts": {
+    "start": "echo 'No build process required. Load the extension from the source directory.'"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+} 

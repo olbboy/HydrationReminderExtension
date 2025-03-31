@@ -1,0 +1,366 @@
+/* Variables */
+:root {
+  --primary-color: #2196f3;
+  --primary-dark: #1976d2;
+  --primary-light: #bbdefb;
+  --text-color: #333;
+  --bg-color: #fff;
+  --secondary-bg: #f5f5f5;
+  --border-color: #ddd;
+  --success-color: #4caf50;
+  --error-color: #f44336;
+  --chart-bar-color: #2196f3;
+  --chart-bg-color: #e3f2fd;
+  --progress-empty: #e0e0e0;
+  --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+/* Dark theme variables */
+.dark-theme {
+  --primary-color: #29b6f6;
+  --primary-dark: #0288d1;
+  --primary-light: #4fc3f7;
+  --text-color: #f5f5f5;
+  --bg-color: #1f1f1f;
+  --secondary-bg: #2d2d2d;
+  --border-color: #444;
+  --success-color: #66bb6a;
+  --error-color: #e57373;
+  --chart-bar-color: #29b6f6;
+  --chart-bg-color: #1e3a5f;
+  --progress-empty: #424242;
+  --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: var(--transition);
+}
+
+.app {
+  width: 350px;
+  min-height: 450px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+}
+
+h1 {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+h2 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: var(--primary-color);
+}
+
+/* Theme toggle button */
+#theme-toggle {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+#theme-toggle:hover {
+  background-color: var(--secondary-bg);
+}
+
+/* Progress section */
+.progress-section {
+  margin-bottom: 20px;
+}
+
+.progress-container {
+  margin-bottom: 15px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.progress-bar {
+  height: 20px;
+  background-color: var(--progress-empty);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--primary-color);
+  width: 0;
+  transition: width 0.5s ease;
+}
+
+/* Quick add buttons */
+.quick-add {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.water-btn, .custom-btn, button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 14px;
+}
+
+.water-btn:hover, .custom-btn:hover, button:hover {
+  background-color: var(--primary-dark);
+}
+
+/* Custom input */
+.custom-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.custom-input.hidden {
+  display: none;
+}
+
+.custom-input input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Settings section */
+.settings-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: var(--secondary-bg);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow);
+}
+
+.setting-item {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-item.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.setting-item label {
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.setting-item.checkbox label {
+  margin-bottom: 0;
+}
+
+.setting-item select, 
+.setting-item input[type="number"],
+.setting-item input[type="range"] {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.setting-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color);
+}
+
+/* Sound settings */
+.setting-item:has(#sound-choice) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.setting-item:has(#sound-choice) label {
+  flex: 1;
+  min-width: 120px;
+}
+
+.setting-item:has(#sound-choice) select {
+  flex: 2;
+}
+
+.icon-button {
+  background: var(--primary-light);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* Stats section */
+.stats-section {
+  margin-bottom: 20px;
+}
+
+#stats-container {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+  padding: 8px;
+  background-color: var(--secondary-bg);
+  border-radius: 4px;
+  margin: 0 5px;
+}
+
+.stat-label {
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.stat-value {
+  font-weight: 500;
+  font-size: 16px;
+}
+
+/* Chart */
+#chart-container {
+  margin-top: 15px;
+  height: 120px;
+  background-color: var(--secondary-bg);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.chart {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+}
+
+.chart-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  flex: 1;
+}
+
+.chart-bar {
+  width: 70%;
+  background-color: var(--chart-bar-color);
+  border-radius: 3px 3px 0 0;
+  transition: height 0.5s ease;
+}
+
+.chart-label {
+  font-size: 10px;
+  margin-top: 5px;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+/* Footer */
+footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+}
+
+#save-settings {
+  width: 100%;
+  padding: 10px;
+  font-weight: 500;
+}
+
+/* Messages */
+.message {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  z-index: 999;
+  box-shadow: var(--box-shadow);
+  animation: slide-up 0.3s ease;
+  transition: opacity 0.5s ease;
+}
+
+.message.success {
+  background-color: var(--success-color);
+}
+
+.message.error {
+  background-color: var(--error-color);
+}
+
+.message.fade-out {
+  opacity: 0;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translate(-50%, 20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+} 
