@@ -95,6 +95,22 @@ When you receive a notification:
 2. Check your system volume settings
 3. Try adjusting the volume slider in the extension settings
 
+### UI Not Displaying Correctly or Missing Styles
+1. Delete the `dist` directory and rebuild with the `npm run build` command
+2. Check if the `styles/styles.css` file exists in the `dist` directory
+3. Open Chrome DevTools when the extension appears to see CSS issues
+4. If the issue is "Failed to load resource", check the CSS path in `popup.html`
+5. Sometimes, you need to clear Chrome cache:
+   - Go to `chrome://settings/clearBrowserData`
+   - Select "Cached images and files"
+   - Press "Clear data"
+
+### Tailwind Not Working
+1. Check if the `tailwind.config.js` file is configured correctly with content paths
+2. Run `npx tailwindcss init -p` to create config files
+3. Verify PostCSS is configured correctly in `postcss.config.js`
+4. Check CSS import in `popup.js` and `popup.html`
+
 ## Privacy
 
 This extension stores all data locally using Chrome's storage API and does not transmit any data to external servers.
@@ -198,6 +214,60 @@ Khi bạn nhận được thông báo:
 2. Kiểm tra cài đặt âm lượng hệ thống
 3. Thử điều chỉnh thanh trượt âm lượng trong cài đặt extension
 
+### UI Không Hiển Thị Đúng Hoặc Thiếu Styles
+1. Xóa thư mục `dist` và build lại với lệnh `npm run build`
+2. Kiểm tra file `styles/styles.css` đã được tạo trong thư mục `dist`
+3. Mở Chrome DevTools khi extension hiện lên để xem lỗi CSS
+4. Nếu lỗi "Failed to load resource", kiểm tra đường dẫn CSS trong `popup.html`
+5. Đôi khi cần xóa cache của Chrome: 
+   - Đi đến `chrome://settings/clearBrowserData`
+   - Chọn "Cached images and files" 
+   - Nhấn "Clear data"
+
+### Tailwind Không Hoạt Động
+1. Kiểm tra file `tailwind.config.js` đã cấu hình đúng content paths
+2. Chạy `npx tailwindcss init -p` để tạo lại config files
+3. Xác nhận PostCSS đã được cấu hình đúng trong `postcss.config.js`
+4. Kiểm tra import CSS trong `popup.js` và `popup.html`
+
 ## Quyền Riêng Tư
 
-Extension này lưu trữ tất cả dữ liệu cục bộ bằng API lưu trữ của Chrome và không truyền bất kỳ dữ liệu nào đến máy chủ bên ngoài. 
+Extension này lưu trữ tất cả dữ liệu cục bộ bằng API lưu trữ của Chrome và không truyền bất kỳ dữ liệu nào đến máy chủ bên ngoài.
+
+## Hướng Dẫn Phát Triển
+
+### Cài Đặt Dependencies
+
+Để phát triển hoặc chỉnh sửa extension, cần cài đặt các dependencies:
+
+```bash
+# Cài đặt dependencies
+npm install
+
+# Khởi chạy chế độ phát triển
+npm run dev
+```
+
+### Build Extension
+
+```bash
+# Build extension cho sản phẩm
+npm run build
+
+# Build và theo dõi thay đổi
+npm run watch
+```
+
+### Công Nghệ Sử Dụng
+
+- **Tailwind CSS v4:** Framework CSS tiện ích để tạo UI dựa trên class
+- **Shadcn UI:** Pattern thiết kế UI hiện đại dựa trên Radix UI  
+- **Radix UI:** Thư viện các primitive component không có styles
+- **Vite:** Công cụ build hiện đại và nhanh chóng
+
+### Cấu Trúc Thư Mục
+
+- `src/`: Chứa mã nguồn JavaScript và CSS
+- `public/`: Chứa tài nguyên tĩnh (âm thanh, hình ảnh)
+- `icons/`: Chứa biểu tượng extension
+- `dist/`: (được tạo sau khi build) Chứa tệp đã được biên dịch 
