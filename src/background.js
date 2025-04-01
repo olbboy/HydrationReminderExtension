@@ -39,18 +39,41 @@ chrome.runtime.onInstalled.addListener(async () => {
   setupAlarm();
 });
 
-// Set up the alarm based on user settings
+// Set up the alarm based on user settings - with improved error handling and logging
 async function setupAlarm() {
-  const { settings } = await chrome.storage.sync.get('settings') || { settings: DEFAULT_SETTINGS };
-  
-  // Clear existing alarm if any
-  await chrome.alarms.clear(ALARM_NAME);
-  
-  if (settings.notificationsEnabled) {
-    // Create a new alarm
-    chrome.alarms.create(ALARM_NAME, {
-      periodInMinutes: settings.reminderInterval
-    });
+  try {
+    console.log('Setting up notification alarm...');
+    
+    const { settings } = await chrome.storage.sync.get('settings') || { settings: DEFAULT_SETTINGS };
+    
+    // Clear existing alarm if any
+    await chrome.alarms.clear(ALARM_NAME);
+    console.log('Cleared existing alarm');
+    
+    if (settings.notificationsEnabled) {
+      // Create a new alarm with proper interval
+      const periodInMinutes = Math.max(1, parseInt(settings.reminderInterval) || 60);
+      
+      console.log(`Creating new alarm with interval: ${periodInMinutes} minutes`);
+      chrome.alarms.create(ALARM_NAME, {
+        periodInMinutes: periodInMinutes
+      });
+      
+      // Verify alarm was created
+      setTimeout(async () => {
+        const alarms = await chrome.alarms.getAll();
+        const reminderAlarm = alarms.find(alarm => alarm.name === ALARM_NAME);
+        if (reminderAlarm) {
+          console.log(`Alarm successfully created. Next trigger: ${new Date(reminderAlarm.scheduledTime).toLocaleTimeString()}`);
+        } else {
+          console.error('Failed to create alarm. Notifications will not work.');
+        }
+      }, 1000);
+    } else {
+      console.log('Notifications disabled. No alarm created.');
+    }
+  } catch (error) {
+    console.error('Error setting up alarm:', error);
   }
 }
 
@@ -69,6 +92,8 @@ let isCurrentlyFullscreen = false;
 
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('Background script received message:', message);
+  
   if (message.type === 'FULLSCREEN_CHANGE') {
     isCurrentlyFullscreen = message.isFullscreen;
     sendResponse({ success: true });
@@ -104,6 +129,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       .catch(error => {
         console.error('Error generating recommendations:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true; // Indicate async response
+  }
+  
+  // Handle test notification request
+  if (message.action === 'testNotification') {
+    console.log('Test notification request received');
+    triggerTestNotification()
+      .then(() => {
+        console.log('Test notification sent successfully');
+        sendResponse({ success: true });
+      })
+      .catch(error => {
+        console.error('Test notification error:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true; // Indicate async response
+  }
+  
+  // Get notification status (for debugging)
+  if (message.action === 'getNotificationStatus') {
+    getNotificationDebugInfo()
+      .then(debugInfo => {
+        sendResponse({ success: true, debugInfo });
+      })
+      .catch(error => {
+        console.error('Error getting notification status:', error);
         sendResponse({ success: false, error: error.message });
       });
     return true; // Indicate async response
@@ -395,4 +448,126 @@ async function callGemini(prompt, apiKey) {
   }
   
   throw new Error('Unexpected response format from Gemini API');
+}
+
+// Function to trigger a test notification immediately
+async function triggerTestNotification() {
+  console.log('Triggering test notification...');
+  
+  // Get current settings
+  const { settings } = await chrome.storage.sync.get('settings') || { settings: DEFAULT_SETTINGS };
+  
+  const options = {
+    type: 'basic',
+    iconUrl: '../icons/icon128.png',
+    title: 'Hydration Reminder Test',
+    message: 'This is a test notification from the Hydration Reminder extension!',
+    silent: true // We'll handle sound ourselves
+  };
+  
+  // Add debug data
+  try {
+    const debugInfo = await getNotificationDebugInfo();
+    options.message += `\n\nDebug: Alarm active: ${debugInfo.alarmExists}, Notif allowed: ${debugInfo.notificationsAllowed}`;
+  } catch (error) {
+    console.warn('Could not add debug info to test notification:', error);
+  }
+  
+  // Show the notification with a unique ID to avoid conflicts
+  chrome.notifications.create('hydration-reminder-test-' + Date.now(), options);
+  
+  // Play the sound
+  playNotificationSound(settings.soundChoice, settings.volume);
+  
+  // Also log that we triggered a test notification
+  console.log('Test notification triggered with settings:', settings);
+  
+  // Verify the alarm is set properly
+  checkAlarmStatus();
+  
+  return true;
+}
+
+// Function to check the current status of the alarm
+async function checkAlarmStatus() {
+  try {
+    const alarms = await chrome.alarms.getAll();
+    const reminderAlarm = alarms.find(alarm => alarm.name === ALARM_NAME);
+    
+    console.log('Current alarm status:', reminderAlarm 
+      ? `Active, next fire: ${new Date(reminderAlarm.scheduledTime).toLocaleTimeString()}, period: ${reminderAlarm.periodInMinutes} min` 
+      : 'No active alarm');
+    
+    if (!reminderAlarm) {
+      console.warn('Warning: No active reminder alarm found. Notifications will not trigger automatically.');
+      
+      // Check if notifications should be enabled based on settings
+      const { settings } = await chrome.storage.sync.get('settings') || { settings: DEFAULT_SETTINGS };
+      if (settings.notificationsEnabled) {
+        console.warn('Notifications are enabled in settings but no alarm is set. Attempting to fix...');
+        setupAlarm();
+      } else {
+        console.log('Notifications are disabled in settings, no alarm needed.');
+      }
+    }
+    
+    return reminderAlarm;
+  } catch (error) {
+    console.error('Error checking alarm status:', error);
+    return null;
+  }
+}
+
+// Get notification and alarm debug info
+async function getNotificationDebugInfo() {
+  try {
+    // Check alarm status
+    const alarms = await chrome.alarms.getAll();
+    const reminderAlarm = alarms.find(alarm => alarm.name === ALARM_NAME);
+    const alarmExists = !!reminderAlarm;
+    
+    // Get settings
+    const { settings } = await chrome.storage.sync.get('settings') || { settings: DEFAULT_SETTINGS };
+    const notificationsEnabled = settings.notificationsEnabled;
+    const reminderInterval = settings.reminderInterval;
+    
+    // Get notification permission - can't check directly in background, but we can infer
+    const notificationsAllowed = notificationsEnabled;
+    
+    // Get fullscreen status
+    const fullScreenPause = settings.fullScreenPause;
+    const currentlyFullscreen = isCurrentlyFullscreen;
+    
+    // Calculate next notification time
+    let nextNotificationTime = null;
+    if (reminderAlarm) {
+      nextNotificationTime = new Date(reminderAlarm.scheduledTime).toLocaleTimeString();
+    }
+    
+    return {
+      alarmExists,
+      alarmInfo: reminderAlarm ? {
+        name: reminderAlarm.name,
+        scheduledTime: new Date(reminderAlarm.scheduledTime).toLocaleTimeString(),
+        periodInMinutes: reminderAlarm.periodInMinutes
+      } : null,
+      settings: {
+        notificationsEnabled,
+        reminderInterval,
+        fullScreenPause
+      },
+      currentState: {
+        currentlyFullscreen,
+        shouldShowNextNotification: notificationsEnabled && (!fullScreenPause || !currentlyFullscreen)
+      },
+      notificationsAllowed,
+      nextNotificationTime
+    };
+  } catch (error) {
+    console.error('Error getting notification debug info:', error);
+    return {
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
 } 

@@ -700,6 +700,38 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(239, 68, 68, 0.25);
   }
+
+  .notification-test {
+    @apply flex flex-col gap-2;
+  }
+
+  .notification-test button {
+    @apply flex items-center justify-center gap-2 w-full;
+  }
+
+  .notification-test button svg {
+    @apply w-4 h-4;
+  }
+
+  .notification-log {
+    @apply mt-4 p-3 bg-muted/30 rounded-lg border border-border/50;
+  }
+
+  .notification-log h4 {
+    @apply text-sm font-medium text-foreground mb-2;
+  }
+
+  .log-entries {
+    @apply space-y-1.5;
+  }
+
+  .log-entry {
+    @apply text-xs text-muted-foreground flex items-center gap-2;
+  }
+
+  .log-entry .timestamp {
+    @apply text-[10px] text-muted-foreground/70;
+  }
 }
 
 /* Animations */
@@ -813,4 +845,125 @@
 
 .app-frozen-overlay button {
   @apply py-2 px-6 bg-primary text-primary-foreground rounded-lg font-medium shadow-lg hover:bg-primary/90 transition-colors;
+}
+
+/* Button animations */
+.pulse {
+  animation: pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.hover {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+/* Improved form actions */
+.form-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.form-actions .btn-primary {
+  min-width: 140px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.form-actions .btn-primary:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.form-actions .btn-primary:active {
+  transform: translateY(1px);
+}
+
+/* Checkbox toggle improvements */
+.toggle-control {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toggle-control .switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-control .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--muted);
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.toggle-control .slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggle-control input:checked + .slider {
+  background-color: var(--primary);
+}
+
+.toggle-control input:focus + .slider {
+  box-shadow: 0 0 1px var(--primary);
+}
+
+.toggle-control input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+/* Notifications permission badge */
+.notification-permission {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.notification-permission.granted {
+  background-color: var(--green-100);
+  color: var(--green-800);
+}
+
+.notification-permission.denied {
+  background-color: var(--red-100);
+  color: var(--red-800);
+}
+
+.notification-permission.default {
+  background-color: var(--gray-100);
+  color: var(--gray-800);
 } 

@@ -312,124 +312,106 @@ document.addEventListener('DOMContentLoaded', () => {
       event.preventDefault();
     });
     
-    // Check DOM elements and log errors
-    try {
-      checkDOMElements();
-    } catch (domError) {
-      console.error('DOM check error:', domError);
-      // Continue anyway as we can recover from some missing elements
-    }
-    
     // Display startup notification
     showToast('Loading data...', 'info');
     
-    // Display current date with error handling
-    try {
-      displayCurrentDate();
-    } catch (dateError) {
-      console.error('Date display error:', dateError);
-      // Not critical, continue
-    }
-    
-    // Load data with error handling
+    // Load data with error handling - do this first to populate settings
     loadData();
     
-    // Initialize UI components with error handling
-    try {
-      initializeUI();
-    } catch (uiError) {
-      console.error('UI initialization error:', uiError);
-      showToast('Some UI components could not be initialized', 'warning');
-    }
-    
-    // Add emergency recovery button with delay and error handling
+    // Wait a moment to ensure DOM is fully loaded and data is available
     setTimeout(() => {
       try {
-        addEmergencyButton();
-      } catch (emergencyError) {
-        console.error('Could not add emergency button:', emergencyError);
-      }
-    }, 2000);
-    
-    // Start freeze detector with delay and error handling
-    setTimeout(() => {
-      try {
-        // Initialize freeze detector
-        freezeDetector.start();
+        // Check DOM elements and log errors
+        checkDOMElements();
         
-        // Register callback
-        freezeDetector.onFreeze(isFrozen => {
-          if (isFrozen) {
-            showToast('App performance issue detected', 'warning');
-          } else {
-            showToast('App is responsive again', 'success');
+        // Display current date with error handling
+        try {
+          displayCurrentDate();
+        } catch (dateError) {
+          console.error('Date display error:', dateError);
+          // Not critical, continue
+        }
+        
+        // Initialize UI components with error handling
+        try {
+          initializeUI();
+        } catch (uiError) {
+          console.error('UI initialization error:', uiError);
+          showToast('Some UI components could not be initialized', 'warning');
+        }
+        
+        // Add emergency recovery button with delay and error handling
+        setTimeout(() => {
+          try {
+            addEmergencyButton();
+          } catch (emergencyError) {
+            console.error('Emergency button error:', emergencyError);
+            // Not critical, continue
           }
-        });
+        }, 2000);
         
-        console.log('Freeze detection started');
-      } catch (freezeError) {
-        console.error('Could not start freeze detector:', freezeError);
+        // Set app as initialized
+        window.appInitialized = true;
+        
+        // Clear loading notification
+        setTimeout(() => {
+          clearErrorToasts();
+          showToast('Ready!', 'success', 1500);
+        }, 500);
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showToast('Error during initialization', 'error');
       }
-    }, 3000);
-    
-    // Mark app as initialized
-    window.appInitialized = true;
+    }, 300); // Small delay to ensure DOM is ready
     
   } catch (error) {
-    console.error('Application startup error:', error);
-    
-    try {
-      showToast('Error during startup. Please reload.', 'error');
-    } catch (toastError) {
-      console.error('Could not show error toast:', toastError);
-    }
-    
+    console.error('Critical startup error:', error);
     try {
       handleCriticalError(error);
-    } catch (criticalError) {
-      console.error('Critical error handler failed:', criticalError);
-      
-      // Last resort: display visible error on page
-      const errorDiv = document.createElement('div');
-      errorDiv.style.position = 'fixed';
-      errorDiv.style.top = '0';
-      errorDiv.style.left = '0';
-      errorDiv.style.width = '100%';
-      errorDiv.style.backgroundColor = 'red';
-      errorDiv.style.color = 'white';
-      errorDiv.style.padding = '20px';
-      errorDiv.style.zIndex = '9999';
-      errorDiv.innerHTML = 'Application failed to start. Please reload the page.';
-      document.body.appendChild(errorDiv);
+    } catch (handlerError) {
+      console.error('Handler failure:', handlerError);
+      alert('Failed to initialize application. Please reload.');
     }
   }
 });
 
 // Initialize UI components
 function initializeUI() {
+  console.log('Initializing UI components...');
+  
   try {
-    // Setup tabs
-    setupTabs();
-    
-    // Attach event listeners
-    attachEventListeners();
+    // Apply theme based on settings
+    applyTheme();
     
     // Initialize water bottle
     initializeWaterBottle();
     
-    // Initialize ripple effects
+    // Setup tab navigation
+    setupTabs();
+    
+    // Add ripple effects to buttons
     initializeRippleEffects();
     
-    // Apply current theme
-    applyTheme();
+    // Attach event listeners safely, with retries if needed
+    attachEventListenersWithRetry();
+    
+    // Initialize the freeze detector
+    if (window.FreezeDetector) {
+      const freezeDetector = new FreezeDetector();
+      freezeDetector.start();
+      freezeDetector.onFreeze(() => {
+        console.warn('UI freeze detected, attempting recovery');
+        freezeDetector.attemptRecovery();
+      });
+    }
     
     // Update UI with current data
     updateUI();
     
-    console.log('UI initialized successfully');
   } catch (error) {
-    console.error('UI initialization error:', error);
-    showToast('Error initializing UI', 'error');
+    console.error('Error initializing UI:', error);
+    showToast('Error setting up interface', 'error');
+    throw error; // Re-throw to allow higher level error handling
   }
 }
 
@@ -1242,36 +1224,212 @@ function updateRemainingUI() {
 
 // Update settings UI
 function updateSettingsUI() {
-  if (reminderIntervalSelect) reminderIntervalSelect.value = settings.reminderInterval || 60;
-  if (dailyTargetInput) dailyTargetInput.value = settings.dailyTarget || 2000;
-  if (soundSelectEl) soundSelectEl.value = settings.soundChoice || 'water-drop';
-  if (volumeSlider) volumeSlider.value = settings.volume !== undefined ? settings.volume : 0.7;
+  console.log('Updating settings UI...');
   
-  // Update checkboxes - we need to update both the checkbox and its UI representation
-  if (notificationsEnabledCheckbox) setCheckboxState(notificationsEnabledCheckbox, settings.notificationsEnabled);
-  if (fullscreenPauseCheckbox) setCheckboxState(fullscreenPauseCheckbox, settings.fullScreenPause);
+  // First load latest settings from storage to ensure we have the most recent data
+  chrome.storage.local.get(['settings'], function(result) {
+    // Only update if we got data back and this isn't a first-time load
+    if (result.settings) {
+      // Use storage values but don't override the current settings object completely
+      console.log('Settings from storage:', result.settings);
+      
+      // Update our settings object with storage values
+      Object.assign(settings, result.settings);
+      console.log('Updated settings object:', settings);
+    }
+    
+    // Now update UI with latest settings data
+    if (reminderIntervalSelect) reminderIntervalSelect.value = settings.reminderInterval || 60;
+    if (dailyTargetInput) dailyTargetInput.value = settings.dailyTarget || 2000;
+    if (soundToggleCheckbox) setCheckboxState(soundToggleCheckbox, settings.sound !== false); // default to true
+    if (soundSelectEl) soundSelectEl.value = settings.soundChoice || 'water-drop';
+    if (volumeSlider) volumeSlider.value = settings.volume !== undefined ? settings.volume : 0.7;
+    
+    // Update checkboxes with proper fallbacks
+    if (notificationsEnabledCheckbox) {
+      const notificationsSetting = settings.notificationsEnabled !== undefined ? 
+        settings.notificationsEnabled : 
+        (settings.notifications !== undefined ? settings.notifications : true);
+      setCheckboxState(notificationsEnabledCheckbox, notificationsSetting);
+    }
+    
+    if (fullscreenPauseCheckbox) setCheckboxState(fullscreenPauseCheckbox, settings.fullScreenPause === true);
+    
+    // Update smart goals checkbox if it exists
+    const smartGoalsCheckbox = document.getElementById('smart-goals');
+    if (smartGoalsCheckbox) {
+      setCheckboxState(smartGoalsCheckbox, settings.smartGoals === true);
+    }
+    
+    // Update cloud sync checkbox if it exists
+    const cloudSyncCheckbox = document.getElementById('cloud-sync');
+    if (cloudSyncCheckbox) {
+      setCheckboxState(cloudSyncCheckbox, settings.cloudSync === true);
+    }
+    
+    // Set color theme if defined
+    if (settings.theme) {
+      const themeButtons = document.querySelectorAll('[data-theme]');
+      themeButtons.forEach(btn => {
+        if (btn.dataset.theme === settings.theme) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+    
+    // Create or update test notification button
+    addTestNotificationButton();
+    
+    console.log('Settings UI updated with current values');
+  });
+}
+
+// Add test notification button to settings tab
+function addTestNotificationButton() {
+  // Check if settings form actions container exists
+  const formActions = document.querySelector('.form-actions');
+  if (!formActions) return;
   
-  // Update smart goals checkbox if it exists
-  const smartGoalsCheckbox = document.getElementById('smart-goals');
-  if (smartGoalsCheckbox) {
-    setCheckboxState(smartGoalsCheckbox, settings.smartGoals || false);
+  // Check if the button already exists to avoid duplicates
+  let testNotificationBtn = document.getElementById('test-notification');
+  
+  if (!testNotificationBtn) {
+    // Create the button if it doesn't exist
+    testNotificationBtn = document.createElement('button');
+    testNotificationBtn.id = 'test-notification';
+    testNotificationBtn.className = 'btn-secondary ripple mr-2';
+    testNotificationBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path></svg>
+      Test Notification
+    `;
+    
+    // Add event listener
+    testNotificationBtn.addEventListener('click', function(event) {
+      event.preventDefault();
+      testNotifications();
+    });
+    
+    // Add to DOM before the save button
+    const saveBtn = formActions.querySelector('#save-settings');
+    if (saveBtn) {
+      formActions.insertBefore(testNotificationBtn, saveBtn);
+    } else {
+      formActions.appendChild(testNotificationBtn);
+    }
+    
+    console.log('Test notification button added');
+  }
+}
+
+// Function to test notifications
+function testNotifications() {
+  console.log('Testing notifications...');
+  logNotificationStatus('🔍 Starting notification test...');
+  
+  // First, check browser support
+  if (!("Notification" in window)) {
+    const message = 'Notifications are not supported in this browser';
+    showToast(message, 'error');
+    logNotificationStatus('❌ ' + message);
+    return;
   }
   
-  // Update cloud sync checkbox if it exists
-  const cloudSyncCheckbox = document.getElementById('cloud-sync');
-  if (cloudSyncCheckbox) {
-    setCheckboxState(cloudSyncCheckbox, settings.cloudSync || false);
+  logNotificationStatus('✓ Browser supports notifications');
+  
+  // Check if notifications are enabled in settings
+  if (!settings.notificationsEnabled) {
+    const message = 'Notifications are disabled in settings';
+    showToast(message, 'warning');
+    logNotificationStatus('⚠️ ' + message);
+    return;
   }
   
-  // Set color theme if defined
-  if (settings.colorTheme) {
-    const themeButtons = document.querySelectorAll('[data-theme]');
-    if (themeButtons.length > 0) {
-      themeButtons.forEach(btn => btn.removeAttribute('data-active'));
-      const activeThemeBtn = document.querySelector(`[data-theme="${settings.colorTheme}"]`);
-      if (activeThemeBtn) {
-        activeThemeBtn.setAttribute('data-active', 'true');
+  logNotificationStatus('✓ Notifications are enabled in settings');
+  
+  // Check if we have permission already
+  if (Notification.permission === "granted") {
+    // We have permission, trigger both the local and background notifications
+    logNotificationStatus('✓ Notification permission is granted');
+    sendTestNotification();
+    triggerBackgroundNotificationTest();
+    showToast('Test notification sent!', 'success');
+  } else if (Notification.permission !== "denied") {
+    // We need to request permission first
+    logNotificationStatus('⏳ Requesting notification permission...');
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        logNotificationStatus('✓ Notification permission granted');
+        showToast('Notification permission granted!', 'success');
+        sendTestNotification();
+        triggerBackgroundNotificationTest();
+      } else {
+        const message = 'Notification permission denied. Please enable in browser settings.';
+        showToast(message, 'warning');
+        logNotificationStatus('❌ ' + message);
       }
+    });
+  } else {
+    // Permission previously denied
+    const message = 'Notification permission denied. Please enable in browser settings.';
+    showToast(message, 'warning');
+    logNotificationStatus('❌ ' + message);
+  }
+}
+
+// Trigger a test notification from the background script
+function triggerBackgroundNotificationTest() {
+  chrome.runtime.sendMessage({
+    action: 'testNotification',
+    test: true
+  }, response => {
+    if (chrome.runtime.lastError) {
+      console.error('Error triggering background notification:', chrome.runtime.lastError);
+      showToast('Background notification test failed. See console for details.', 'error');
+      logNotificationStatus('❌ Background notification failed: ' + chrome.runtime.lastError.message);
+    } else if (response && response.success) {
+      console.log('Background notification test triggered');
+      logNotificationStatus('✅ Background notification sent');
+    } else {
+      console.warn('Background notification may have failed', response);
+      logNotificationStatus('⚠️ Background notification response uncertain');
+    }
+  });
+}
+
+// Add a status log to debug notification issues
+function logNotificationStatus(message) {
+  console.log('Notification status:', message);
+  
+  const notificationLog = document.getElementById('notification-log');
+  if (!notificationLog) return;
+  
+  // Show the log
+  notificationLog.classList.remove('hidden');
+  
+  // Add the log entry
+  const timestamp = new Date().toLocaleTimeString();
+  const logEntries = notificationLog.querySelector('.log-entries');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `
+    <span class="timestamp">${timestamp}</span>
+    <span class="message">${message}</span>
+  `;
+  
+  // Add to the beginning
+  if (logEntries.firstChild) {
+    logEntries.insertBefore(entry, logEntries.firstChild);
+  } else {
+    logEntries.appendChild(entry);
+  }
+  
+  // Limit log entries
+  const entries = logEntries.querySelectorAll('.log-entry');
+  if (entries.length > 5) {
+    for (let i = 5; i < entries.length; i++) {
+      entries[i].remove();
     }
   }
 }
@@ -1626,12 +1784,22 @@ function setupTabs() {
     return;
   }
   
+  // Store current settings values when leaving settings tab
+  let currentSettings = { ...settings };
+  
   tabTriggers.forEach(trigger => {
     trigger.addEventListener('click', () => {
       try {
         const targetTab = trigger.dataset.tab;
         if (!targetTab) {
           throw new Error('Invalid tab target');
+        }
+        
+        const currentTab = document.querySelector('.tab-trigger[data-state="active"]')?.dataset.tab;
+        
+        // If leaving settings tab, store current form values to preserve them
+        if (currentTab === 'settings') {
+          preserveSettingsFormValues();
         }
         
         // Update UI in animation frame
@@ -1658,62 +1826,92 @@ function setupTabs() {
   } catch (error) {
     ErrorHandler.handle(error, 'tab-init');
   }
-}
-
-// Update tab states
-function updateTabStates(triggers, contents, activeTab) {
-  // Update triggers
-  triggers.forEach(trigger => {
-    if (trigger.dataset.tab === activeTab) {
-      trigger.setAttribute('data-state', 'active');
-      trigger.setAttribute('aria-selected', 'true');
-    } else {
-      trigger.removeAttribute('data-state');
-      trigger.setAttribute('aria-selected', 'false');
-    }
-  });
   
-  // Update content panels
-  contents.forEach(content => {
-    if (content.dataset.tabContent === activeTab) {
-      content.classList.remove('hidden');
-      content.setAttribute('data-state', 'active');
-      content.setAttribute('aria-hidden', 'false');
-    } else {
-      content.classList.add('hidden');
-      content.removeAttribute('data-state');
-      content.setAttribute('aria-hidden', 'true');
+  // Helper function to preserve settings form values
+  function preserveSettingsFormValues() {
+    // Get the current form values before switching tabs
+    const dailyTarget = dailyTargetInput?.value || settings.dailyTarget;
+    const reminderInterval = reminderIntervalSelect?.value || settings.reminderInterval;
+    const notificationsEnabled = notificationsEnabledCheckbox?.checked;
+    const soundEnabled = soundToggleCheckbox?.checked;
+    const soundChoice = soundSelectEl?.value || settings.soundChoice;
+    const volume = volumeSlider?.value !== undefined ? volumeSlider.value : settings.volume;
+    const fullScreenPause = fullscreenPauseCheckbox?.checked;
+    
+    // Update the settings object with the form values to preserve them
+    if (dailyTarget) settings.dailyTarget = parseInt(dailyTarget, 10);
+    if (reminderInterval) settings.reminderInterval = parseInt(reminderInterval, 10);
+    if (notificationsEnabled !== undefined) {
+      settings.notificationsEnabled = notificationsEnabled;
+      settings.notifications = notificationsEnabled; // For backward compatibility
     }
-  });
-}
-
-// Refresh tab content
-function refreshTabContent(tab) {
-  switch (tab) {
-    case 'dashboard':
-      updateUI();
-      break;
-    case 'stats':
-      updateStats();
-      break;
-    case 'insights':
-      updateInsights();
-      break;
-    case 'settings':
-      updateSettingsUI();
-      break;
+    if (soundEnabled !== undefined) settings.sound = soundEnabled;
+    if (soundChoice) settings.soundChoice = soundChoice;
+    if (volume !== undefined) settings.volume = parseFloat(volume);
+    if (fullScreenPause !== undefined) settings.fullScreenPause = fullScreenPause;
+    
+    // Store smart goals and cloud sync if available
+    const smartGoalsCheckbox = document.getElementById('smart-goals');
+    if (smartGoalsCheckbox) {
+      settings.smartGoals = smartGoalsCheckbox.checked;
+    }
+    
+    const cloudSyncCheckbox = document.getElementById('cloud-sync');
+    if (cloudSyncCheckbox) {
+      settings.cloudSync = cloudSyncCheckbox.checked;
+    }
+    
+    // Save settings to storage when leaving the settings tab
+    // This will ensure settings are saved even if the user doesn't click "Save Settings"
+    // but we won't show a notification to avoid confusion
+    const quietSave = true;
+    saveData(quietSave);
+    
+    console.log('Settings preserved between tab switches:', settings);
   }
 }
 
 // Attach event listeners with improved error handling
 function attachEventListeners() {
   try {
-    console.log('Attaching event listeners...');
+    // ... existing code ...
+    
+    // Test notification button
+    const testNotificationBtn = document.getElementById('test-notification');
+    if (testNotificationBtn) {
+      testNotificationBtn.addEventListener('click', function(event) {
+        event.preventDefault();
+        testNotifications();
+      });
+    }
+    
+    // ... existing code ...
+  } catch (error) {
+    console.error('Error attaching event listeners:', error);
+    handleEventListenerError(error);
+  }
+}
+
+// Improved function to attach event listeners with retry mechanism
+function attachEventListenersWithRetry(retryCount = 0, maxRetries = 2) {
+  console.log(`Attaching event listeners (attempt ${retryCount + 1})...`);
+  
+  try {
+    // Ensure DOM elements are available before attaching listeners
+    if (!checkRequiredElements()) {
+      if (retryCount < maxRetries) {
+        console.log(`Required elements not found, retrying in 300ms (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        setTimeout(() => attachEventListenersWithRetry(retryCount + 1, maxRetries), 300);
+        return;
+      } else {
+        throw new Error('Required elements not found after retries');
+      }
+    }
     
     // Water controls
     attachWaterControls();
     
-    // Settings controls
+    // Settings controls - now with safer handling
     attachSettingsControls();
     
     // Theme controls
@@ -1722,13 +1920,48 @@ function attachEventListeners() {
     // Custom amount controls
     attachCustomAmountControls();
     
+    // Setup sound controls if available
+    try {
+      setupSoundControls();
+    } catch (soundError) {
+      console.warn('Sound controls error:', soundError);
+      // Non-critical, continue
+    }
+    
+    // Setup data management buttons if available
+    try {
+      setupDataManagementButtons();
+    } catch (dataError) {
+      console.warn('Data management buttons error:', dataError);
+      // Non-critical, continue
+    }
+    
     console.log('Event listeners attached successfully');
     
   } catch (error) {
     console.error('Error attaching event listeners:', error);
-    showToast('Error setting up controls', 'error');
-    handleEventListenerError(error);
+    
+    if (retryCount < maxRetries) {
+      console.log(`Retrying attachment in 500ms (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      setTimeout(() => attachEventListenersWithRetry(retryCount + 1, maxRetries), 500);
+    } else {
+      showToast('Error setting up controls', 'error');
+      handleEventListenerError(error);
+    }
   }
+}
+
+// Check that required elements for event listeners are present
+function checkRequiredElements() {
+  // Check for at least one of each critical element type
+  const criticalElements = [
+    document.querySelector('.tab-trigger'),
+    document.querySelector('[data-tab-content]'),
+    document.getElementById('save-settings') 
+  ];
+  
+  // Return true if all critical elements exist
+  return criticalElements.every(el => el !== null);
 }
 
 // Attach water control events
@@ -1742,10 +1975,77 @@ function attachWaterControls() {
 
 // Attach settings control events
 function attachSettingsControls() {
+  console.log('Attaching settings controls...');
+  
+  // Get save settings button - check if it exists
+  const saveSettingsBtn = document.getElementById('save-settings');
+  
   if (!saveSettingsBtn) {
-    console.warn('Settings button not found');
-    return;
+    console.warn('Settings button not found, will retry on settings tab activation');
+    
+    // Add listener for settings tab click to retry finding the button
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab) {
+      settingsTab.addEventListener('click', () => {
+        setTimeout(() => {
+          const retrySettingsBtn = document.getElementById('save-settings');
+          if (retrySettingsBtn && !retrySettingsBtn.hasEventListener) {
+            attachSettingsSaveHandler(retrySettingsBtn);
+          }
+        }, 300);
+      });
+    }
+  } else {
+    attachSettingsSaveHandler(saveSettingsBtn);
   }
+  
+  // Input validation
+  const dailyTargetInput = document.getElementById('daily-target');
+  if (dailyTargetInput) {
+    dailyTargetInput.addEventListener('input', validateDailyTarget);
+  }
+  
+  const reminderIntervalSelect = document.getElementById('reminder-interval');
+  if (reminderIntervalSelect) {
+    reminderIntervalSelect.addEventListener('change', validateReminderInterval);
+  }
+  
+  // Attach notification permission request when checkbox is clicked
+  const notificationsEnabledCheckbox = document.getElementById('notifications-enabled');
+  if (notificationsEnabledCheckbox) {
+    notificationsEnabledCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        requestNotificationPermission();
+      }
+    });
+  }
+  
+  // Immediate check for notification permissions status on settings tab
+  const settingsTab = document.getElementById('settings-tab');
+  if (settingsTab) {
+    settingsTab.addEventListener('click', function() {
+      // Check notification permission status when settings tab is opened
+      if (Notification.permission === "granted") {
+        if (notificationsEnabledCheckbox) notificationsEnabledCheckbox.checked = true;
+      } else if (Notification.permission === "denied") {
+        if (notificationsEnabledCheckbox) {
+          notificationsEnabledCheckbox.checked = false;
+          // Show info about permissions being denied
+          showToast('Notification permission denied. Enable in browser settings.', 'warning');
+        }
+      }
+    });
+  }
+}
+
+// Extract settings save logic to a separate function, accepting the button parameter
+function attachSettingsSaveHandler(saveSettingsBtn) {
+  if (!saveSettingsBtn) return;
+  
+  console.log('Attaching save settings handler');
+  
+  // Mark as having event listener to prevent duplicate attachments
+  saveSettingsBtn.hasEventListener = true;
   
   // Settings save
   saveSettingsBtn.addEventListener('click', (event) => {
@@ -1758,373 +2058,242 @@ function attachSettingsControls() {
     }
   });
   
-  // Input validation
-  if (dailyTargetInput) {
-    dailyTargetInput.addEventListener('input', validateDailyTarget);
-  }
-  
-  if (reminderIntervalSelect) {
-    reminderIntervalSelect.addEventListener('change', validateReminderInterval);
-  }
-}
-
-// Attach theme control events
-function attachThemeControls() {
-  themeButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      try {
-        const theme = btn.dataset.theme;
-        if (!theme) return;
-        
-        settings.theme = theme;
-        applyTheme();
-        debouncedSave();
-        
-      } catch (error) {
-        console.error('Error changing theme:', error);
-        showToast('Failed to change theme', 'error');
-      }
-    });
-  });
-}
-
-// Attach custom amount control events
-function attachCustomAmountControls() {
-  if (!customAmountBtn || !customInputContainer || !customAmountInput || !addCustomBtn || !cancelCustomBtn) {
-    console.warn('Custom amount controls not found');
-    return;
-  }
-  
-  // Add data attributes to make identification more reliable
-  addCustomBtn.setAttribute('data-action', 'add-custom-amount');
-  customAmountInput.setAttribute('data-action', 'custom-amount-input');
-  
-  // Show custom input
-  customAmountBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    
-    // Reset the water intake success flag when opening custom input
-    lastWaterIntakeSuccessful = false;
-    
-    // Clear any previous error toasts before showing input
-    clearErrorToasts();
-    
-    // Update button text to reflect current drink type
-    const activeType = document.querySelector('[data-drink-type].active');
-    const drinkType = activeType?.dataset.drinkType || 'water';
-    customAmountBtn.textContent = `Custom ${getDrinkTypeName(drinkType)}`;
-    
-    // Show input and focus
-    customInputContainer.classList.remove('hidden');
-    customAmountInput.value = '';
-    customAmountInput.classList.remove('valid', 'invalid');
-    customAmountInput.focus();
+  // Add visual feedback on hover
+  saveSettingsBtn.addEventListener('mouseenter', () => {
+    saveSettingsBtn.classList.add('hover');
   });
   
-  // Add custom amount
-  addCustomBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    // Reset flag to ensure validation runs
-    lastWaterIntakeSuccessful = false;
-    // Set explicit custom amount action flag
-    isExplicitCustomAmountAction = true;
-    // Add class to identify this as a custom amount action
-    addCustomBtn.classList.add('custom-amount-action');
-    handleCustomAmount();
-    // Remove the class after handling
-    setTimeout(() => {
-      addCustomBtn.classList.remove('custom-amount-action');
-      isExplicitCustomAmountAction = false;
-    }, 100);
+  saveSettingsBtn.addEventListener('mouseleave', () => {
+    saveSettingsBtn.classList.remove('hover');
   });
-  
-  // Cancel custom amount
-  cancelCustomBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    hideCustomAmount();
-  });
-  
-  // Input validation - force numeric values only
-  customAmountInput.addEventListener('input', () => {
-    // Reset success flag when user is editing input
-    lastWaterIntakeSuccessful = false;
-    
-    // Remove non-numeric characters
-    customAmountInput.value = customAmountInput.value.replace(/[^0-9]/g, '');
-    
-    // Add visual feedback
-    if (customAmountInput.value) {
-      const amount = parseInt(customAmountInput.value, 10);
-      if (amount > 0 && amount <= 2000) {
-        customAmountInput.classList.remove('invalid');
-        customAmountInput.classList.add('valid');
-      } else {
-        customAmountInput.classList.remove('valid');
-        customAmountInput.classList.add('invalid');
-      }
-    } else {
-      customAmountInput.classList.remove('valid', 'invalid');
-    }
-  });
-  
-  // Handle enter key
-  customAmountInput.addEventListener('keypress', (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      // Reset flag to ensure validation runs
-      lastWaterIntakeSuccessful = false;
-      
-      // Set explicit custom amount action flag
-      isExplicitCustomAmountAction = true;
-      
-      // Set focus to the input itself to ensure it's detected as the active element
-      customAmountInput.focus();
-      
-      // We don't need to add/remove the class since we now directly check for the element in handleCustomAmount
-      handleCustomAmount();
-      
-      // Reset the flag after handling
-      setTimeout(() => {
-        isExplicitCustomAmountAction = false;
-      }, 100);
-    }
-  });
-}
-
-// Handle custom amount submission with improved error handling
-function handleCustomAmount() {
-  try {
-    // If the last water intake was successful and this is triggered
-    // by the system (not user input), ignore validation
-    if (lastWaterIntakeSuccessful) {
-      console.log('Skipping validation due to successful water intake');
-      lastWaterIntakeSuccessful = false;
-      return;
-    }
-    
-    // Clear any previous error toasts
-    clearErrorToasts();
-    
-    // Get and validate the amount
-    const inputValue = customAmountInput.value.trim();
-    
-    // If a drink was just added (detected by checking if custom input is now hidden),
-    // don't show any errors - this prevents "Please enter an amount" errors after adding coffee/tea
-    if (customInputContainer.classList.contains('hidden')) {
-      console.log('Custom input is hidden, skipping validation');
-      return;
-    }
-    
-    // Debug the active element
-    console.log('Active element in handleCustomAmount:', 
-                document.activeElement.tagName,
-                document.activeElement.id,
-                document.activeElement.classList?.value || '');
-    
-    // Determine if this is an explicit custom amount action - use multiple reliable checks
-    const isExplicitAction = isExplicitCustomAmountAction;
-    const isAddButton = document.activeElement === addCustomBtn || 
-                         document.activeElement.id === 'add-custom';
-    const isInputField = document.activeElement === customAmountInput;
-    const hasCustomClass = document.activeElement.classList?.contains('custom-amount-action');
-    const hasDataAttr = document.activeElement.getAttribute('data-action') === 'add-custom-amount' ||
-                        document.activeElement.getAttribute('data-action') === 'custom-amount-input';
-    
-    // Only consider it a custom amount action if one of these is true
-    const isCustomAmountAction = isExplicitAction || isAddButton || isInputField || hasCustomClass || hasDataAttr;
-    
-    console.log('Custom amount action detection:', {
-      isExplicitAction,
-      isAddButton,
-      isInputField,
-      hasCustomClass,
-      hasDataAttr,
-      isCustomAmountAction
-    });
-    
-    // If custom input field is visible, it's likely a custom amount action
-    const isCustomInputShown = !customInputContainer.classList.contains('hidden');
-    
-    // If input is empty but not specifically trying to add a custom amount, ignore
-    if (!inputValue && !isCustomAmountAction && !isCustomInputShown) {
-      console.log('Empty input but not from custom amount action - ignoring');
-      return;
-    }
-    
-    // Only show the "please enter an amount" error if:
-    // 1. The input is empty
-    // 2. The user is actually trying to add a custom amount
-    // 3. The custom input container is visible
-    // 4. The last water intake was NOT successful
-    if (!inputValue && isCustomAmountAction && isCustomInputShown && !lastWaterIntakeSuccessful) {
-      showToast('Please enter an amount', 'error');
-      return;
-    }
-    
-    const amount = validateWaterAmount(inputValue);
-    if (!amount) {
-      showToast('Please enter a valid amount between 1 and 2000ml', 'error');
-      return;
-    }
-    
-    // Get active drink type - multiple fallback mechanisms
-    let drinkType;
-    
-    // First check for active button
-    const activeType = document.querySelector('[data-drink-type].active');
-    if (activeType && activeType.dataset.drinkType) {
-      drinkType = activeType.dataset.drinkType;
-    } 
-    // Then check the stored value in body dataset
-    else if (document.body.dataset.currentDrinkType) {
-      drinkType = document.body.dataset.currentDrinkType;
-    } 
-    // Default to water if all else fails
-    else {
-      drinkType = 'water';
-    }
-    
-    console.log(`Adding custom amount: ${amount}ml of ${drinkType}`); // Debug log
-    
-    // Only hide input and clear value if addWaterIntake succeeds
-    if (addWaterIntake(amount, drinkType)) {
-      hideCustomAmount();
-    }
-    
-  } catch (error) {
-    console.error('Error adding custom amount:', error);
-    showToast('Failed to add custom amount', 'error');
-  }
-}
-
-// Hide custom amount input
-function hideCustomAmount() {
-  if (customInputContainer && customAmountInput) {
-    customAmountInput.value = '';
-    customInputContainer.classList.add('hidden');
-  }
-}
-
-// Handle event listener errors
-function handleEventListenerError(error) {
-  // Log error details
-  console.error('Event listener error details:', {
-    error,
-    currentState: {
-      activeTab: document.querySelector('[data-state="active"]')?.dataset.tab,
-      settings: { ...settings },
-      date: new Date().toISOString()
-    }
-  });
-  
-  // Try to repair UI state
-  try {
-    // Reset tab state
-    const defaultTab = document.querySelector('.tab-trigger')?.dataset.tab;
-    if (defaultTab) {
-      updateTabStates(
-        document.querySelectorAll('.tab-trigger'),
-        document.querySelectorAll('[data-tab-content]'),
-        defaultTab
-      );
-    }
-    
-    // Hide any open modals or overlays
-    hideCustomAmount();
-    
-    // Update UI
-    updateUI();
-    
-  } catch (repairError) {
-    console.error('Failed to repair UI state:', repairError);
-    showToast('Please reload the application', 'error');
-  }
-}
-
-// Initialize water bottle fill animation
-function initializeWaterBottle() {
-  console.log('Initializing water bottle');
-  
-  // Check for required elements
-  const waterFill = document.getElementById('water-fill');
-  if (!waterFill) {
-    console.error('Water fill element not found');
-    return;
-  }
-  
-  // Add wave animation
-  const waterWave = waterFill.querySelector('.water-wave');
-  if (waterWave) {
-    waterWave.style.animation = 'wave 3s infinite linear';
-  } else {
-    console.warn('Water wave element not found');
-  }
-}
-
-// Update streak counter
-function updateStreak(today) {
-  // Initialize streak data if needed
-  streakData = streakData || { count: 0, lastDate: null };
-  
-  // No previous streak
-  if (!streakData.lastDate) {
-    streakData.count = 1;
-    streakData.lastDate = today;
-    return;
-  }
-  
-  // Calculate days between
-  const lastDate = new Date(streakData.lastDate);
-  const currentDate = new Date(today);
-  const daysDiff = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
-  
-  if (daysDiff === 0) {
-    // Same day, no change
-    return;
-  } else if (daysDiff === 1) {
-    // Consecutive day, increment streak
-    streakData.count += 1;
-    streakData.lastDate = today;
-  } else {
-    // Streak broken
-    streakData.count = 1;
-    streakData.lastDate = today;
-  }
 }
 
 // Save settings to storage
 function saveSettings() {
-  // Gather values from UI
-  settings.reminderInterval = parseInt(reminderIntervalSelect.value, 10);
-  settings.dailyTarget = parseInt(dailyTargetInput.value, 10);
-  settings.soundChoice = soundSelectEl.value;
-  settings.volume = parseFloat(volumeSlider.value);
-  settings.notificationsEnabled = notificationsEnabledCheckbox.checked;
-  settings.fullScreenPause = fullscreenPauseCheckbox.checked;
-  
-  // Check for new settings elements
-  const smartGoalsCheckbox = document.getElementById('smart-goals');
-  if (smartGoalsCheckbox) {
-    settings.smartGoals = smartGoalsCheckbox.checked;
+  try {
+    console.log('Saving settings...');
+    
+    // Get all form elements first
+    const dailyTargetInput = document.getElementById('daily-target');
+    const reminderIntervalSelect = document.getElementById('reminder-interval');
+    const notificationsEnabledCheckbox = document.getElementById('notifications-enabled');
+    const soundToggleCheckbox = document.getElementById('sound-toggle');
+    const soundSelectEl = document.getElementById('sound-select');
+    const volumeSlider = document.getElementById('volume-slider');
+    const fullscreenPauseCheckbox = document.getElementById('fullscreen-pause');
+    const saveSettingsBtn = document.getElementById('save-settings');
+    
+    // Validate inputs if available
+    if (dailyTargetInput && !validateDailyTarget()) {
+      showToast('Daily target is invalid, please enter a value between 500-5000ml', 'error');
+      return;
+    }
+    
+    if (reminderIntervalSelect && !validateReminderInterval()) {
+      showToast('Reminder interval is invalid, please enter a value between 15-240 minutes', 'error');
+      return;
+    }
+    
+    // Visual feedback - button pulse animation
+    if (saveSettingsBtn) {
+      saveSettingsBtn.classList.add('pulse');
+      setTimeout(() => {
+        saveSettingsBtn.classList.remove('pulse');
+      }, 500);
+    }
+    
+    // Get values directly from DOM elements to ensure we have the most current values
+    // Use nullish coalescing to handle missing elements
+    const dailyTarget = parseInt(dailyTargetInput?.value || settings.dailyTarget || DEFAULT_SETTINGS.dailyTarget, 10);
+    const reminderInterval = parseInt(reminderIntervalSelect?.value || settings.reminderInterval || DEFAULT_SETTINGS.reminderInterval, 10);
+    const notificationsEnabled = notificationsEnabledCheckbox ? notificationsEnabledCheckbox.checked : settings.notificationsEnabled;
+    const soundEnabled = soundToggleCheckbox ? soundToggleCheckbox.checked : settings.sound;
+    const soundChoice = soundSelectEl?.value || settings.soundChoice || DEFAULT_SETTINGS.soundChoice;
+    const volume = parseFloat(volumeSlider?.value || settings.volume || 0.7);
+    const fullScreenPause = fullscreenPauseCheckbox ? fullscreenPauseCheckbox.checked : settings.fullScreenPause;
+    
+    // Update settings object with form values
+    settings.dailyTarget = dailyTarget;
+    settings.reminderInterval = reminderInterval;
+    settings.notifications = notificationsEnabled;
+    settings.notificationsEnabled = notificationsEnabled;
+    settings.sound = soundEnabled;
+    settings.soundChoice = soundChoice;
+    settings.volume = volume; 
+    settings.fullScreenPause = fullScreenPause;
+    
+    // Check for new settings elements
+    const smartGoalsCheckbox = document.getElementById('smart-goals');
+    if (smartGoalsCheckbox) {
+      settings.smartGoals = smartGoalsCheckbox.checked;
+    }
+    
+    const cloudSyncCheckbox = document.getElementById('cloud-sync');
+    if (cloudSyncCheckbox) {
+      settings.cloudSync = cloudSyncCheckbox.checked;
+    }
+    
+    console.log('Settings before save:', JSON.stringify(settings));
+    
+    // Save to storage
+    saveData();
+    
+    // Update UI to reflect new settings
+    updateUI();
+    
+    // Update notification permissions and registration
+    if (settings.notificationsEnabled) {
+      requestNotificationPermission();
+    }
+
+    // Communicate with background script to update reminder settings
+    chrome.runtime.sendMessage({
+      action: 'updateSettings',
+      settings: settings
+    }, response => {
+      if (chrome.runtime.lastError) {
+        console.error('Error sending settings to background:', chrome.runtime.lastError);
+        showToast('Settings saved but background sync failed', 'warning');
+      } else if (response && response.success) {
+        console.log('Background script updated with new settings');
+      }
+    });
+    
+    // Show confirmation with pulse animation
+    showToast('Settings saved successfully!', 'success');
+    
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    showToast('Failed to save settings. Please try again.', 'error');
   }
-  
-  const cloudSyncCheckbox = document.getElementById('cloud-sync');
-  if (cloudSyncCheckbox) {
-    settings.cloudSync = cloudSyncCheckbox.checked;
+}
+
+// Request notification permission
+function requestNotificationPermission() {
+  try {
+    console.log('Requesting notification permission...');
+    
+    // Check if browser supports notifications
+    if (!("Notification" in window)) {
+      console.warn("This browser does not support desktop notifications");
+      showToast('Notifications are not supported in this browser', 'warning');
+      
+      // Update checkbox to reflect actual state
+      if (notificationsEnabledCheckbox) {
+        notificationsEnabledCheckbox.checked = false;
+        settings.notificationsEnabled = false;
+      }
+      
+      return false;
+    }
+    
+    // Check if permission is already granted
+    if (Notification.permission === "granted") {
+      console.log("Notification permission already granted");
+      return true;
+    }
+    
+    // Request permission
+    if (Notification.permission !== "denied") {
+      console.log("Requesting notification permission from user");
+      
+      // Show a toast to guide the user
+      showToast('Please allow notifications in the popup', 'info');
+      
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          console.log("Notification permission granted");
+          showToast('Notification permission granted!', 'success');
+          
+          // Send test notification
+          sendTestNotification();
+          
+          return true;
+        } else {
+          console.warn("Notification permission denied");
+          showToast('Notification permission denied by user', 'warning');
+          
+          // Update the settings to reflect actual permission state
+          settings.notificationsEnabled = false;
+          if (notificationsEnabledCheckbox) {
+            notificationsEnabledCheckbox.checked = false;
+          }
+          
+          // Save the updated settings
+          saveData();
+          
+          return false;
+        }
+      }).catch(error => {
+        console.error('Error requesting notification permission:', error);
+        showToast('Error requesting notification permission', 'error');
+        
+        // Update UI to reflect failure
+        settings.notificationsEnabled = false;
+        if (notificationsEnabledCheckbox) {
+          notificationsEnabledCheckbox.checked = false;
+        }
+        
+        return false;
+      });
+    } else {
+      showToast('Please enable notifications in your browser settings', 'warning');
+      // Update checkbox to reflect actual state
+      if (notificationsEnabledCheckbox) {
+        notificationsEnabledCheckbox.checked = false;
+        settings.notificationsEnabled = false;
+      }
+      return false;
+    }
+  } catch (error) {
+    console.error('Error in notification permission request:', error);
+    return false;
   }
-  
-  // Save to storage
-  saveData();
-  
-  // Update UI
-  updateUI();
-  
-  // Show confirmation
-  showToast('Settings saved successfully!', 'success');
+}
+
+// Send test notification
+function sendTestNotification() {
+  try {
+    // Check if notifications are enabled
+    if (!settings.notificationsEnabled) {
+      return;
+    }
+    
+    // Check if we have permission
+    if (Notification.permission !== "granted") {
+      return;
+    }
+    
+    // Create and show notification
+    const notification = new Notification("Hydration Reminder", {
+      body: "Notifications are working! Remember to stay hydrated.",
+      icon: chrome.runtime.getURL("icons/water-drop-64.png"),
+      silent: false
+    });
+    
+    // Play sound if enabled
+    if (settings.sound) {
+      playSound(settings.soundChoice, settings.volume);
+    }
+    
+    // Auto close after 5 seconds
+    setTimeout(() => {
+      notification.close();
+    }, 5000);
+    
+    // Click handler
+    notification.onclick = function() {
+      // Focus the extension popup if possible
+      window.focus();
+      notification.close();
+    };
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+  }
 }
 
 // Save data to storage
-function saveData() {
+function saveData(quietSave = false) {
   // Make sure hydrationData has proper structure before saving
   ensureDataStructure();
   
@@ -2141,7 +2310,7 @@ function saveData() {
   }, () => {
     if (chrome.runtime.lastError) {
       console.error('Error saving data:', chrome.runtime.lastError);
-      showToast('Failed to save data', 'error');
+      if (!quietSave) showToast('Failed to save data', 'error');
     } else {
       console.log('Data saved successfully');
     }
@@ -2243,78 +2412,101 @@ function playNotificationSound() {
 
 // Improved toast notification system
 function showToast(message, type = 'info', duration = 3000) {
+  // Filter toasts based on config
+  if (
+    (type === 'info' && !toastConfig.showInfoToasts) ||
+    (type === 'success' && !toastConfig.showSuccessToasts) ||
+    (type === 'warning' && !toastConfig.showWarningToasts) ||
+    (type === 'error' && !toastConfig.showErrorToasts) ||
+    (message.includes('internal') && !toastConfig.showInternalErrors)
+  ) {
+    // Just log the message instead of showing toast
+    console.log(`[Toast suppressed] ${type}: ${message}`);
+    return;
+  }
+  
+  // Check if toast container exists
+  if (!toastContainer) {
+    console.warn('Toast container not found');
+    return;
+  }
+  
   try {
-    // Safety check for message
-    if (!message) {
-      console.warn('Empty toast message');
-      return;
-    }
-    
-    // Get or create toast container
-    let toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-      toastContainer = document.createElement('div');
-      toastContainer.id = 'toast-container';
-      document.body.appendChild(toastContainer);
-    }
-    
-    // Limit concurrent toasts to prevent overflow
-    const maxToasts = 3;
-    const existingToasts = toastContainer.querySelectorAll('.toast');
-    if (existingToasts.length >= maxToasts) {
-      // Remove oldest toast
-      const oldestToast = existingToasts[0];
-      if (oldestToast && oldestToast.parentNode) {
-        oldestToast.parentNode.removeChild(oldestToast);
-      }
-    }
-    
-    // Remove existing toast with same message to prevent duplicates
-    const existingToast = Array.from(existingToasts)
-      .find(toast => toast.textContent.trim() === message);
-    if (existingToast && existingToast.parentNode) {
-      existingToast.parentNode.removeChild(existingToast);
-    }
-    
     // Create toast element
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type || 'info'}`;
-    toast.innerText = message;
-    toast.setAttribute('role', 'alert');
+    toast.className = `toast toast-${type}`;
     
-    // Add close button
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'toast-close';
-    closeBtn.innerHTML = '&times;';
-    closeBtn.addEventListener('click', () => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
-      }
-    });
-    toast.appendChild(closeBtn);
+    // Add icon based on type
+    let icon = '';
+    switch (type) {
+      case 'success':
+        icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="toast-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+        break;
+      case 'error': 
+        icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="toast-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+        break;
+      case 'warning':
+        icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="toast-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+        break;
+      default: // info
+        icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="toast-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+    }
+    
+    // Set toast content
+    toast.innerHTML = `
+      ${icon}
+      <div class="toast-message">${message}</div>
+      <button class="toast-close">&times;</button>
+    `;
     
     // Add to container
     toastContainer.appendChild(toast);
     
-    // Auto-remove after duration
+    // Animate in
     setTimeout(() => {
-      // Check if toast still exists
-      if (toast && toast.parentNode) {
-        // Add exit animation class
-        toast.classList.add('toast-exit');
-        
-        // Remove after animation
-        setTimeout(() => {
-          if (toast && toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-          }
-        }, 300);
+      toast.classList.add('toast-visible');
+    }, 10);
+    
+    // Add close button handler
+    const closeButton = toast.querySelector('.toast-close');
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        removeToast(toast);
+      });
+    }
+    
+    // Auto remove after duration
+    if (duration > 0) {
+      setTimeout(() => {
+        removeToast(toast);
+      }, duration);
+    }
+    
+    // Limit maximum number of toasts
+    const maxToasts = 3;
+    const toasts = toastContainer.querySelectorAll('.toast');
+    if (toasts.length > maxToasts) {
+      // Remove oldest toasts first (those without the toast-visible class already)
+      for (let i = 0; i < toasts.length - maxToasts; i++) {
+        if (!toasts[i].classList.contains('toast-new')) {
+          toastContainer.removeChild(toasts[i]);
+        }
       }
-    }, duration);
+    }
+    
   } catch (error) {
-    // Even toast notifications can fail, handle gracefully
-    console.error('Error displaying toast notification:', error);
-    // Don't try to show another toast as that might cause a loop
+    console.error('Failed to show toast:', error);
+  }
+  
+  // Helper function to remove a toast with animation
+  function removeToast(toast) {
+    toast.classList.remove('toast-visible');
+    toast.classList.add('toast-hidden');
+    setTimeout(() => {
+      if (toast.parentNode === toastContainer) {
+        toastContainer.removeChild(toast);
+      }
+    }, 300); // Match the CSS animation duration
   }
 }
 
@@ -3170,4 +3362,418 @@ function clearErrorToasts() {
     toast.remove();
   });
 }
+
+// Attach theme control events
+function attachThemeControls() {
+  themeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      try {
+        const theme = btn.dataset.theme;
+        if (!theme) return;
+        
+        settings.theme = theme;
+        applyTheme();
+        debouncedSave();
+        
+      } catch (error) {
+        console.error('Error changing theme:', error);
+        showToast('Failed to change theme', 'error');
+      }
+    });
+  });
+}
+
+// Attach custom amount control events
+function attachCustomAmountControls() {
+  if (!customAmountBtn || !customInputContainer || !customAmountInput || !addCustomBtn || !cancelCustomBtn) {
+    console.warn('Custom amount controls not found');
+    return;
+  }
+  
+  // Add data attributes to make identification more reliable
+  addCustomBtn.setAttribute('data-action', 'add-custom-amount');
+  customAmountInput.setAttribute('data-action', 'custom-amount-input');
+  
+  // Show custom input
+  customAmountBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    
+    // Reset the water intake success flag when opening custom input
+    lastWaterIntakeSuccessful = false;
+    
+    // Clear any previous error toasts before showing input
+    clearErrorToasts();
+    
+    // Update button text to reflect current drink type
+    const activeType = document.querySelector('[data-drink-type].active');
+    const drinkType = activeType?.dataset.drinkType || 'water';
+    customAmountBtn.textContent = `Custom ${getDrinkTypeName(drinkType)}`;
+    
+    // Show input and focus
+    customInputContainer.classList.remove('hidden');
+    customAmountInput.value = '';
+    customAmountInput.classList.remove('valid', 'invalid');
+    customAmountInput.focus();
+  });
+  
+  // Add custom amount
+  addCustomBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    // Reset flag to ensure validation runs
+    lastWaterIntakeSuccessful = false;
+    // Set explicit custom amount action flag
+    isExplicitCustomAmountAction = true;
+    // Add class to identify this as a custom amount action
+    addCustomBtn.classList.add('custom-amount-action');
+    handleCustomAmount();
+    // Remove the class after handling
+    setTimeout(() => {
+      addCustomBtn.classList.remove('custom-amount-action');
+      isExplicitCustomAmountAction = false;
+    }, 100);
+  });
+  
+  // Cancel custom amount
+  cancelCustomBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    hideCustomAmount();
+  });
+  
+  // Input validation - force numeric values only
+  customAmountInput.addEventListener('input', () => {
+    // Reset success flag when user is editing input
+    lastWaterIntakeSuccessful = false;
+    
+    // Remove non-numeric characters
+    customAmountInput.value = customAmountInput.value.replace(/[^0-9]/g, '');
+    
+    // Add visual feedback
+    if (customAmountInput.value) {
+      const amount = parseInt(customAmountInput.value, 10);
+      if (amount > 0 && amount <= 2000) {
+        customAmountInput.classList.remove('invalid');
+        customAmountInput.classList.add('valid');
+      } else {
+        customAmountInput.classList.remove('valid');
+        customAmountInput.classList.add('invalid');
+      }
+    } else {
+      customAmountInput.classList.remove('valid', 'invalid');
+    }
+  });
+  
+  // Handle enter key
+  customAmountInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      // Reset flag to ensure validation runs
+      lastWaterIntakeSuccessful = false;
+      
+      // Set explicit custom amount action flag
+      isExplicitCustomAmountAction = true;
+      
+      // Set focus to the input itself to ensure it's detected as the active element
+      customAmountInput.focus();
+      
+      // We don't need to add/remove the class since we now directly check for the element in handleCustomAmount
+      handleCustomAmount();
+      
+      // Reset the flag after handling
+      setTimeout(() => {
+        isExplicitCustomAmountAction = false;
+      }, 100);
+    }
+  });
+}
+
+// Handle custom amount submission with improved error handling
+function handleCustomAmount() {
+  try {
+    // If the last water intake was successful and this is triggered
+    // by the system (not user input), ignore validation
+    if (lastWaterIntakeSuccessful) {
+      console.log('Skipping validation due to successful water intake');
+      lastWaterIntakeSuccessful = false;
+      return;
+    }
+    
+    // Clear any previous error toasts
+    clearErrorToasts();
+    
+    // Get and validate the amount
+    const inputValue = customAmountInput.value.trim();
+    
+    // If a drink was just added (detected by checking if custom input is now hidden),
+    // don't show any errors - this prevents "Please enter an amount" errors after adding coffee/tea
+    if (customInputContainer.classList.contains('hidden')) {
+      console.log('Custom input is hidden, skipping validation');
+      return;
+    }
+    
+    // Debug the active element
+    console.log('Active element in handleCustomAmount:', 
+                document.activeElement.tagName,
+                document.activeElement.id,
+                document.activeElement.classList?.value || '');
+    
+    // Determine if this is an explicit custom amount action - use multiple reliable checks
+    const isExplicitAction = isExplicitCustomAmountAction;
+    const isAddButton = document.activeElement === addCustomBtn || 
+                         document.activeElement.id === 'add-custom';
+    const isInputField = document.activeElement === customAmountInput;
+    const hasCustomClass = document.activeElement.classList?.contains('custom-amount-action');
+    const hasDataAttr = document.activeElement.getAttribute('data-action') === 'add-custom-amount' ||
+                        document.activeElement.getAttribute('data-action') === 'custom-amount-input';
+    
+    // Only consider it a custom amount action if one of these is true
+    const isCustomAmountAction = isExplicitAction || isAddButton || isInputField || hasCustomClass || hasDataAttr;
+    
+    console.log('Custom amount action detection:', {
+      isExplicitAction,
+      isAddButton,
+      isInputField,
+      hasCustomClass,
+      hasDataAttr,
+      isCustomAmountAction
+    });
+    
+    // If custom input field is visible, it's likely a custom amount action
+    const isCustomInputShown = !customInputContainer.classList.contains('hidden');
+    
+    // If input is empty but not specifically trying to add a custom amount, ignore
+    if (!inputValue && !isCustomAmountAction && !isCustomInputShown) {
+      console.log('Empty input but not from custom amount action - ignoring');
+      return;
+    }
+    
+    // Only show the "please enter an amount" error if:
+    // 1. The input is empty
+    // 2. The user is actually trying to add a custom amount
+    // 3. The custom input container is visible
+    // 4. The last water intake was NOT successful
+    if (!inputValue && isCustomAmountAction && isCustomInputShown && !lastWaterIntakeSuccessful) {
+      showToast('Please enter an amount', 'error');
+      return;
+    }
+    
+    const amount = validateWaterAmount(inputValue);
+    if (!amount) {
+      showToast('Please enter a valid amount between 1 and 2000ml', 'error');
+      return;
+    }
+    
+    // Get active drink type - multiple fallback mechanisms
+    let drinkType;
+    
+    // First check for active button
+    const activeType = document.querySelector('[data-drink-type].active');
+    if (activeType && activeType.dataset.drinkType) {
+      drinkType = activeType.dataset.drinkType;
+    } 
+    // Then check the stored value in body dataset
+    else if (document.body.dataset.currentDrinkType) {
+      drinkType = document.body.dataset.currentDrinkType;
+    } 
+    // Default to water if all else fails
+    else {
+      drinkType = 'water';
+    }
+    
+    console.log(`Adding custom amount: ${amount}ml of ${drinkType}`); // Debug log
+    
+    // Only hide input and clear value if addWaterIntake succeeds
+    if (addWaterIntake(amount, drinkType)) {
+      hideCustomAmount();
+    }
+    
+  } catch (error) {
+    console.error('Error adding custom amount:', error);
+    showToast('Failed to add custom amount', 'error');
+  }
+}
+
+// Hide custom amount input
+function hideCustomAmount() {
+  if (customInputContainer && customAmountInput) {
+    customAmountInput.value = '';
+    customInputContainer.classList.add('hidden');
+  }
+}
+
+// Handle event listener errors
+function handleEventListenerError(error) {
+  // Log error details
+  console.error('Event listener error details:', {
+    error,
+    currentState: {
+      activeTab: document.querySelector('[data-state="active"]')?.dataset.tab,
+      settings: { ...settings },
+      date: new Date().toISOString()
+    }
+  });
+  
+  // Try to repair UI state
+  try {
+    // Reset tab state
+    const defaultTab = document.querySelector('.tab-trigger')?.dataset.tab;
+    if (defaultTab) {
+      updateTabStates(
+        document.querySelectorAll('.tab-trigger'),
+        document.querySelectorAll('[data-tab-content]'),
+        defaultTab
+      );
+    }
+    
+    // Hide any open modals or overlays
+    hideCustomAmount();
+    
+    // Update UI
+    updateUI();
+    
+  } catch (repairError) {
+    console.error('Failed to repair UI state:', repairError);
+    showToast('Please reload the application', 'error');
+  }
+}
+
+// Initialize water bottle fill animation
+function initializeWaterBottle() {
+  console.log('Initializing water bottle');
+  
+  // Check for required elements
+  const waterFill = document.getElementById('water-fill');
+  if (!waterFill) {
+    console.error('Water fill element not found');
+    return;
+  }
+  
+  // Add wave animation
+  const waterWave = waterFill.querySelector('.water-wave');
+  if (waterWave) {
+    waterWave.style.animation = 'wave 3s infinite linear';
+  } else {
+    console.warn('Water wave element not found');
+  }
+}
+
+// Update streak counter
+function updateStreak(today) {
+  // Initialize streak data if needed
+  streakData = streakData || { count: 0, lastDate: null };
+  
+  // No previous streak
+  if (!streakData.lastDate) {
+    streakData.count = 1;
+    streakData.lastDate = today;
+    return;
+  }
+  
+  // Calculate days between
+  const lastDate = new Date(streakData.lastDate);
+  const currentDate = new Date(today);
+  const daysDiff = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+  
+  if (daysDiff === 0) {
+    // Same day, no change
+    return;
+  } else if (daysDiff === 1) {
+    // Consecutive day, increment streak
+    streakData.count += 1;
+    streakData.lastDate = today;
+  } else {
+    // Streak broken
+    streakData.count = 1;
+    streakData.lastDate = today;
+  }
+}
+
+// Add toast configuration
+const toastConfig = {
+  showInfoToasts: false,      // Non-critical informational toasts
+  showSuccessToasts: true,    // Success toasts
+  showWarningToasts: true,    // Warning toasts
+  showErrorToasts: true,      // Error toasts
+  showInternalErrors: false   // Internal error toasts (for debugging)
+};
+
+// Update tab states
+function updateTabStates(triggers, contents, activeTab) {
+  // Update triggers
+  triggers.forEach(trigger => {
+    if (trigger.dataset.tab === activeTab) {
+      trigger.setAttribute('data-state', 'active');
+      trigger.setAttribute('aria-selected', 'true');
+    } else {
+      trigger.removeAttribute('data-state');
+      trigger.setAttribute('aria-selected', 'false');
+    }
+  });
+  
+  // Update content panels
+  contents.forEach(content => {
+    if (content.dataset.tabContent === activeTab) {
+      content.classList.remove('hidden');
+      content.setAttribute('data-state', 'active');
+      content.setAttribute('aria-hidden', 'false');
+    } else {
+      content.classList.add('hidden');
+      content.removeAttribute('data-state');
+      content.setAttribute('aria-hidden', 'true');
+    }
+  });
+}
+
+// Refresh tab content
+function refreshTabContent(tab) {
+  console.log(`Refreshing content for tab: ${tab}`);
+  switch (tab) {
+    case 'dashboard':
+      updateUI();
+      break;
+    case 'stats':
+      updateStats();
+      break;
+    case 'insights':
+      updateInsights();
+      break;
+    case 'settings':
+      updateSettingsUI();
+      break;
+    default:
+      console.warn(`Unknown tab: ${tab}`);
+      break;
+  }
+}
+
+// Initialize the extension
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    // Check notification permission on startup
+    if (Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+    
+    // Initialize UI components
+    initializeUI();
+    setupTabs();
+    attachEventListeners();
+    displayCurrentDate();
+    
+    // Load and display data
+    await loadData();
+    updateUI();
+    
+    // Initialize other features
+    initializeRippleEffects();
+    setupSoundControls();
+    
+    // Start freeze detection
+    const freezeDetector = new FreezeDetector();
+    freezeDetector.start();
+    
+  } catch (error) {
+    console.error('Error initializing extension:', error);
+    handleCriticalError(error);
+  }
+});
 
