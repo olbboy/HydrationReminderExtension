@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hydration Reminder</title>
   
-  <!-- Preload CSS to tải nhanh hơn -->
+  <!-- Preload CSS for faster loading -->
   <link rel="preload" href="./assets/popup.css" as="style">
   <link rel="stylesheet" href="./assets/popup.css">
   
-  <!-- Fallback CSS trong trường hợp file chính không tải được -->
+  <!-- Fallback CSS in case main file fails to load -->
   <noscript>
     <style>
       :root {
@@ -76,7 +76,7 @@
             <div class="water-bottle" id="water-bottle">
               <div class="water-bottle-cap"></div>
               <div class="water-bottle-label">
-                <span id="hydration-score" class="text-center text-lg font-bold">0%</span>
+                <span id="hydration-score">0%</span>
               </div>
               <div id="water-fill" class="water-fill" style="height: 0%">
                 <div id="water-wave" class="water-wave"></div>
@@ -127,7 +127,7 @@
             
             <div class="stats-secondary">
               <div class="stat-card-mini">
-                <div class="stat-value-mini"><span id="remaining-intake">2000</span>ml</div>
+                <div class="stat-value-mini"><span id="remaining-intake">2000</span> ml</div>
                 <div class="stat-label">Remaining</div>
               </div>
               <div class="stat-card-mini">
@@ -204,83 +204,140 @@
 
       <!-- Stats Tab -->
       <div class="tab-content hidden" data-tab-content="stats" id="stats-content">
-        <h2>Hydration Statistics</h2>
-        <!-- Stats content here -->
+        <div class="settings-content">
+          <h2>Hydration Statistics</h2>
+          <div class="form-group">
+            <h3>Weekly Overview</h3>
+            <div id="weekly-chart" class="chart-container"></div>
+            <div id="weekly-summary" class="stats-summary">
+              <div class="stat-metric">
+                <span class="stat-value">0%</span>
+                <span class="stat-label">Weekly average</span>
+              </div>
+              <div class="stat-metric">
+                <span class="stat-value">0</span>
+                <span class="stat-label">Total drinks</span>
+              </div>
+              <div class="stat-metric">
+                <span class="stat-value">0 ml</span>
+                <span class="stat-label">Weekly volume</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <h3>Monthly Progress</h3>
+            <div id="monthly-chart" class="chart-container"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Insights Tab -->
       <div class="tab-content hidden" data-tab-content="insights" id="insights-content">
-        <h2>Hydration Insights</h2>
-        <div id="chart-container" class="chart-container"></div>
-        <div id="ai-insight" class="ai-insight"></div>
+        <div class="settings-content">
+          <h2>Hydration Insights</h2>
+          
+          <div class="form-group">
+            <h3>Drink Types</h3>
+            <div id="drink-type-chart" class="chart-container"></div>
+          </div>
+          
+          <div class="form-group">
+            <h3>Best Drinking Times</h3>
+            <div id="time-distribution-chart" class="chart-container"></div>
+          </div>
+          
+          <div class="form-group">
+            <h3>AI Analysis</h3>
+            <div id="ai-insight" class="ai-insight">
+              <p>Track your hydration consistently to get personalized insights about your drinking patterns.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Settings Tab -->
       <div class="tab-content hidden" data-tab-content="settings" id="settings-content">
-        <h2>Settings</h2>
-        <div class="settings-form">
-          <div class="form-group">
-            <label for="daily-target">Daily Target (ml)</label>
-            <input type="number" id="daily-target" class="form-control" value="2000" min="500" max="5000">
-          </div>
-          <div class="form-group">
-            <label for="reminder-interval">Reminder Interval (min)</label>
-            <input type="number" id="reminder-interval" class="form-control" value="60" min="15" max="240">
-          </div>
-          <div class="form-group">
-            <label>Notification Settings</label>
-            <div class="toggle-control">
-              <label class="switch">
-                <input type="checkbox" id="notifications-enabled" checked>
-                <span class="slider"></span>
-              </label>
-              <span>Enable notifications</span>
+        <div class="settings-content">
+          <h2>Settings</h2>
+          <div class="settings-form">
+            <div class="form-group">
+              <label for="daily-target">Daily Target (ml)</label>
+              <input type="number" id="daily-target" class="form-control" value="2000" min="500" max="5000">
             </div>
-          </div>
-          <div class="form-group">
-            <label>Sound Settings</label>
-            <div class="sound-settings">
+            
+            <div class="form-group">
+              <label for="reminder-interval">Reminder Interval (min)</label>
+              <input type="number" id="reminder-interval" class="form-control" value="60" min="15" max="240">
+            </div>
+            
+            <div class="form-group">
+              <label>Notification Settings</label>
               <div class="toggle-control">
                 <label class="switch">
-                  <input type="checkbox" id="sound-toggle" checked>
+                  <input type="checkbox" id="notifications-enabled" checked>
                   <span class="slider"></span>
                 </label>
-                <span>Enable sounds</span>
-              </div>
-              <div class="select-wrapper">
-                <select id="sound-select" class="form-control">
-                  <option value="water-drop">Water Drop</option>
-                  <option value="bell">Bell</option>
-                  <option value="chime">Chime</option>
-                </select>
+                <span>Enable notifications</span>
               </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label>App Behavior</label>
-            <div class="toggle-control">
-              <label class="switch">
-                <input type="checkbox" id="fullscreen-pause">
-                <span class="slider"></span>
-              </label>
-              <span>Pause reminders when in full-screen mode</span>
+            
+            <div class="form-group">
+              <label>Sound Settings</label>
+              <div class="sound-settings">
+                <div class="toggle-control">
+                  <label class="switch">
+                    <input type="checkbox" id="sound-toggle" checked>
+                    <span class="slider"></span>
+                  </label>
+                  <span>Enable sounds</span>
+                </div>
+                <div class="select-wrapper">
+                  <select id="sound-select" class="form-control">
+                    <option value="water-drop">Water Drop</option>
+                    <option value="bell">Bell</option>
+                    <option value="chime">Chime</option>
+                  </select>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label>Theme</label>
-            <div class="theme-selector">
-              <button data-theme="light" class="theme-button active" aria-label="Light theme">
-                <span class="theme-circle light"></span>
-                <span>Light</span>
-              </button>
-              <button data-theme="dark" class="theme-button" aria-label="Dark theme">
-                <span class="theme-circle dark"></span>
-                <span>Dark</span>
-              </button>
+            
+            <div class="form-group">
+              <label>App Behavior</label>
+              <div class="toggle-control">
+                <label class="switch">
+                  <input type="checkbox" id="fullscreen-pause">
+                  <span class="slider"></span>
+                </label>
+                <span>Pause reminders when in full-screen mode</span>
+              </div>
             </div>
-          </div>
-          <div class="form-actions">
-            <button id="save-settings" class="btn-primary ripple">Save Settings</button>
+            
+            <div class="form-group">
+              <label>Theme</label>
+              <div class="theme-selector">
+                <button data-theme="light" class="theme-button active" aria-label="Light theme">
+                  <span class="theme-circle light"></span>
+                  <span>Light</span>
+                </button>
+                <button data-theme="dark" class="theme-button" aria-label="Dark theme">
+                  <span class="theme-circle dark"></span>
+                  <span>Dark</span>
+                </button>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Data Management</label>
+              <div class="data-actions">
+                <button id="export-data" class="btn-secondary">Export Data</button>
+                <button id="clear-data" class="btn-destructive">Reset Data</button>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button id="save-settings" class="btn-primary ripple">Save Settings</button>
+            </div>
           </div>
         </div>
       </div>
