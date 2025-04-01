@@ -1,6 +1,56 @@
 // Import CSS for Vite to compile with Tailwind
 import './styles.css';
 
+// Tạo một phần tử style trong lúc chạy nếu CSS không được load
+document.addEventListener('DOMContentLoaded', () => {
+  // Kiểm tra xem CSS đã được load chưa
+  const isCssLoaded = Array.from(document.styleSheets).some(sheet => 
+    sheet.href && sheet.href.includes('popup.css')
+  );
+  
+  // Nếu CSS chưa được load, inject một fallback style để đảm bảo giao diện hoạt động
+  if (!isCssLoaded) {
+    console.warn('CSS stylesheet not loaded, applying fallback styles');
+    
+    // Tạo một phần tử style mới
+    const fallbackStyle = document.createElement('style');
+    
+    // Thêm các style cơ bản
+    fallbackStyle.textContent = `
+      :root {
+        --primary-color: #3b82f6;
+        --primary-dark: #2563eb;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --error-color: #ef4444;
+        --text-color: #1f2937;
+        --bg-color: #ffffff;
+      }
+      
+      .dark {
+        --primary-color: #60a5fa;
+        --primary-dark: #3b82f6;
+        --text-color: #f3f4f6;
+        --bg-color: #1f2937;
+      }
+      
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        min-width: 350px;
+        min-height: 400px;
+        transition: all 0.3s ease;
+      }
+    `;
+    
+    // Thêm style vào head
+    document.head.appendChild(fallbackStyle);
+  }
+});
+
 // DOM Elements - with error handling and logging
 function getElement(id, required = true) {
   const element = document.getElementById(id);
@@ -120,36 +170,48 @@ const ErrorHandler = {
 
   // Handle errors with rate limiting and grouping
   handle(error, context, showToastMessage = true) {
-    const errorKey = `${context}-${error.message}`;
-    const now = Date.now();
-    
-    // Check if this error was recently shown
-    if (this.errorLog.has(errorKey)) {
-      const lastShown = this.errorLog.get(errorKey);
-      if (now - lastShown < 3000) { // Don't show same error within 3 seconds
-        return;
+    try {
+      // Ensure error is an actual Error object
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const errorKey = `${context}-${errorObj.message}`;
+      const now = Date.now();
+      
+      // Check if this error was recently shown
+      if (this.errorLog.has(errorKey)) {
+        const lastShown = this.errorLog.get(errorKey);
+        if (now - lastShown < 3000) { // Don't show same error within 3 seconds
+          return;
+        }
+      }
+      
+      // Log error with context
+      console.error(`Error in ${context}:`, errorObj);
+      
+      // Update error log
+      this.errorLog.set(errorKey, now);
+      
+      // Clear existing error toasts before showing a new one
+      if (showToastMessage) {
+        clearErrorToasts();
+      }
+      
+      // Show user-friendly message if needed
+      if (showToastMessage) {
+        const friendlyMessage = this.getFriendlyMessage(errorObj, context);
+        showToast(friendlyMessage, 'error');
+      }
+      
+      // Try to recover if possible
+      this.attemptRecovery(errorObj, context);
+    } catch (handlerError) {
+      // Prevent errors in the error handler from crashing the app
+      console.error('Error in ErrorHandler:', handlerError);
+      try {
+        showToast('Application encountered an error', 'error');
+      } catch (toastError) {
+        console.error('Failed to show error toast:', toastError);
       }
     }
-    
-    // Log error with context
-    console.error(`Error in ${context}:`, error);
-    
-    // Update error log
-    this.errorLog.set(errorKey, now);
-    
-    // Clear existing error toasts before showing a new one
-    if (showToastMessage) {
-      clearErrorToasts();
-    }
-    
-    // Show user-friendly message if needed
-    if (showToastMessage) {
-      const friendlyMessage = this.getFriendlyMessage(error, context);
-      showToast(friendlyMessage, 'error');
-    }
-    
-    // Try to recover if possible
-    this.attemptRecovery(error, context);
   },
 
   // Get user-friendly error message
@@ -201,29 +263,145 @@ const ErrorHandler = {
   }
 };
 
-// === DOM Content Loaded ===
+// === DOM Content Loaded with improved error handling ===
 document.addEventListener('DOMContentLoaded', () => {
   try {
     console.log('Application starting...');
     
+    // Set global error handler early
+    window.addEventListener('error', (event) => {
+      console.error('Uncaught error:', event.error);
+      
+      try {
+        // Don't show toast during initialization
+        if (window.appInitialized) {
+          showToast('An error occurred: ' + (event.error?.message || 'Unknown error'), 'error');
+        }
+        
+        // Try to handle error to keep app functioning
+        if (event.error && event.error.message && (
+          event.error.message.includes('undefined') || 
+          event.error.message.includes('null') ||
+          event.error.message.includes('not a function')
+        )) {
+          // Try to repair inconsistent data
+          repairDataInconsistencies();
+        }
+      } catch (handlerError) {
+        console.error('Error in global error handler:', handlerError);
+      }
+      
+      // Prevent default behavior
+      event.preventDefault();
+    });
+    
+    // Setup unhandled rejection handler
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      
+      try {
+        // Don't show toast during initialization
+        if (window.appInitialized) {
+          showToast('Background task error', 'error');
+        }
+      } catch (handlerError) {
+        console.error('Error in promise rejection handler:', handlerError);
+      }
+      
+      // Prevent default behavior
+      event.preventDefault();
+    });
+    
     // Check DOM elements and log errors
-    checkDOMElements();
+    try {
+      checkDOMElements();
+    } catch (domError) {
+      console.error('DOM check error:', domError);
+      // Continue anyway as we can recover from some missing elements
+    }
     
     // Display startup notification
     showToast('Loading data...', 'info');
     
-    // Display current date 
-    displayCurrentDate();
+    // Display current date with error handling
+    try {
+      displayCurrentDate();
+    } catch (dateError) {
+      console.error('Date display error:', dateError);
+      // Not critical, continue
+    }
     
     // Load data with error handling
     loadData();
     
-    // Initialize UI components
-    initializeUI();
+    // Initialize UI components with error handling
+    try {
+      initializeUI();
+    } catch (uiError) {
+      console.error('UI initialization error:', uiError);
+      showToast('Some UI components could not be initialized', 'warning');
+    }
+    
+    // Add emergency recovery button with delay and error handling
+    setTimeout(() => {
+      try {
+        addEmergencyButton();
+      } catch (emergencyError) {
+        console.error('Could not add emergency button:', emergencyError);
+      }
+    }, 2000);
+    
+    // Start freeze detector with delay and error handling
+    setTimeout(() => {
+      try {
+        // Initialize freeze detector
+        freezeDetector.start();
+        
+        // Register callback
+        freezeDetector.onFreeze(isFrozen => {
+          if (isFrozen) {
+            showToast('App performance issue detected', 'warning');
+          } else {
+            showToast('App is responsive again', 'success');
+          }
+        });
+        
+        console.log('Freeze detection started');
+      } catch (freezeError) {
+        console.error('Could not start freeze detector:', freezeError);
+      }
+    }, 3000);
+    
+    // Mark app as initialized
+    window.appInitialized = true;
+    
   } catch (error) {
     console.error('Application startup error:', error);
-    showToast('Error during startup. Please reload.', 'error');
-    handleCriticalError(error);
+    
+    try {
+      showToast('Error during startup. Please reload.', 'error');
+    } catch (toastError) {
+      console.error('Could not show error toast:', toastError);
+    }
+    
+    try {
+      handleCriticalError(error);
+    } catch (criticalError) {
+      console.error('Critical error handler failed:', criticalError);
+      
+      // Last resort: display visible error on page
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '0';
+      errorDiv.style.left = '0';
+      errorDiv.style.width = '100%';
+      errorDiv.style.backgroundColor = 'red';
+      errorDiv.style.color = 'white';
+      errorDiv.style.padding = '20px';
+      errorDiv.style.zIndex = '9999';
+      errorDiv.innerHTML = 'Application failed to start. Please reload the page.';
+      document.body.appendChild(errorDiv);
+    }
   }
 });
 
@@ -422,52 +600,26 @@ function isValidHistoryEntry(entry) {
     && entry.intake >= 0;
 }
 
-// Update loadData function to use validation
+// Enhanced loadData function with improved error recovery
 function loadData() {
   console.log('Loading data from storage...');
   
-  try {
-    chrome.storage.local.get(['settings', 'hydrationData', 'streakData'], (result) => {
-      try {
-        if (chrome.runtime.lastError) {
-          throw new Error(`Chrome storage error: ${chrome.runtime.lastError.message}`);
-        }
-        
-        // Validate and sanitize settings
-        settings = validateSettings(result.settings || {});
-        
-        // Validate and sanitize hydration data
-        hydrationData = sanitizeHydrationData(result.hydrationData || {});
-        
-        // Validate streak data
-        streakData = validateStreakData(result.streakData || {});
-        
-        // Update UI with validated data
-        updateUI();
-        setupTabs();
-        attachEventListeners();
-        
-        console.log('Data loaded and validated successfully');
-        showToast('Ready to track your hydration!', 'success');
-        
-      } catch (error) {
-        console.error('Error processing loaded data:', error);
-        showToast('Error loading data. Using default values.', 'error');
-        
-        // Use default values
-        settings = { ...DEFAULT_SETTINGS };
-        hydrationData = { ...DEFAULT_HYDRATION_DATA };
-        streakData = { ...DEFAULT_STREAK_DATA };
-        
-        // Still try to update UI with default values
-        updateUI();
-        setupTabs();
-        attachEventListeners();
-      }
-    });
-  } catch (error) {
-    console.error('Critical error accessing storage:', error);
-    showToast('Cannot access storage. Using temporary data.', 'error');
+  // Define fallback data
+  const getDefaultData = () => {
+    return {
+      settings: { ...DEFAULT_SETTINGS },
+      hydrationData: { ...DEFAULT_HYDRATION_DATA },
+      streakData: { ...DEFAULT_STREAK_DATA }
+    };
+  };
+  
+  // Initialize with defaults in case of errors
+  let fallbackUsed = false;
+  
+  // Function to apply default data
+  const applyDefaultData = (errorContext) => {
+    console.warn(`${errorContext} - Using default values`);
+    fallbackUsed = true;
     
     // Use default values
     settings = { ...DEFAULT_SETTINGS };
@@ -475,9 +627,105 @@ function loadData() {
     streakData = { ...DEFAULT_STREAK_DATA };
     
     // Still try to update UI with default values
-    updateUI();
-    setupTabs();
-    attachEventListeners();
+    try {
+      updateUI();
+      setupTabs();
+      attachEventListeners();
+    } catch (setupError) {
+      console.error('Failed to setup UI with default data:', setupError);
+    }
+  };
+  
+  try {
+    // Set a timeout to ensure we show UI even if Chrome storage hangs
+    const storageTimeout = setTimeout(() => {
+      if (!fallbackUsed) {
+        console.warn('Storage access timeout - using default data');
+        applyDefaultData('Storage timeout');
+        showToast('Taking too long to load data. Using defaults.', 'warning');
+      }
+    }, 5000); // 5 second timeout
+    
+    chrome.storage.local.get(['settings', 'hydrationData', 'streakData'], (result) => {
+      try {
+        // Clear the timeout since we got a response
+        clearTimeout(storageTimeout);
+        
+        // Check for Chrome runtime errors
+        if (chrome.runtime.lastError) {
+          const errorMessage = chrome.runtime.lastError.message || 'Unknown Chrome storage error';
+          console.error(`Chrome storage error: ${errorMessage}`);
+          applyDefaultData('Chrome storage error');
+          showToast('Error loading your data. Using default values.', 'error');
+          return;
+        }
+        
+        // Check if the result is valid
+        if (!result || typeof result !== 'object') {
+          console.error('Invalid storage result:', result);
+          applyDefaultData('Invalid storage data');
+          showToast('Could not read stored data. Using defaults.', 'error');
+          return;
+        }
+        
+        // Process each data type individually to prevent one error from affecting all
+        try {
+          // Validate and sanitize settings
+          settings = validateSettings(result.settings || {});
+        } catch (settingsError) {
+          console.error('Error processing settings:', settingsError);
+          settings = { ...DEFAULT_SETTINGS };
+        }
+        
+        try {
+          // Validate and sanitize hydration data
+          hydrationData = sanitizeHydrationData(result.hydrationData || {});
+        } catch (hydrationError) {
+          console.error('Error processing hydration data:', hydrationError);
+          hydrationData = { ...DEFAULT_HYDRATION_DATA };
+        }
+        
+        try {
+          // Validate streak data
+          streakData = validateStreakData(result.streakData || {});
+        } catch (streakError) {
+          console.error('Error processing streak data:', streakError);
+          streakData = { ...DEFAULT_STREAK_DATA };
+        }
+        
+        // Update UI with the data we have
+        try {
+          updateUI();
+          setupTabs();
+          attachEventListeners();
+          
+          console.log('Data loaded and validated successfully');
+          showToast('Ready to track your hydration!', 'success');
+        } catch (uiError) {
+          console.error('Error updating UI with loaded data:', uiError);
+          
+          // Try to recover UI
+          try {
+            // Try minimal UI update
+            if (currentIntakeEl) currentIntakeEl.textContent = hydrationData.todayIntake || 0;
+            if (targetIntakeEl) targetIntakeEl.textContent = settings.dailyTarget || 2000;
+          } catch (recoveryError) {
+            console.error('UI recovery failed:', recoveryError);
+          }
+          
+          showToast('Some display elements could not be updated.', 'warning');
+        }
+        
+      } catch (processingError) {
+        console.error('Error processing loaded data:', processingError);
+        applyDefaultData('Data processing error');
+        showToast('Error processing your data. Using defaults.', 'error');
+      }
+    });
+  } catch (error) {
+    console.error('Critical error accessing storage:', error);
+    applyDefaultData('Storage access error');
+    showToast('Cannot access storage. Using temporary data.', 'error');
   }
 }
 
@@ -536,13 +784,20 @@ function addWaterIntake(amount, drinkType = 'water') {
     // Clear any previous error toasts before starting
     clearErrorToasts();
     
+    // Safety check for null or undefined amount
+    if (amount === null || amount === undefined) {
+      lastWaterIntakeSuccessful = false;
+      throw new Error('Missing water amount');
+    }
+    
     // Input validation - directly use the number if it's already a number and valid
     const isNumeric = typeof amount === 'number' && !isNaN(amount);
     const validatedAmount = isNumeric && amount > 0 && amount <= 2000 
       ? amount 
       : validateWaterAmount(amount);
     
-    const validatedType = validateDrinkType(drinkType);
+    // Safety check for drink type
+    const validatedType = validateDrinkType(drinkType || 'water');
     
     if (!validatedAmount) {
       lastWaterIntakeSuccessful = false;
@@ -557,6 +812,19 @@ function addWaterIntake(amount, drinkType = 'water') {
     // Initialize today's data if needed
     ensureTodayData(today);
     
+    // Ensure hydrationData has the proper structure
+    if (!hydrationData.dates || typeof hydrationData.dates !== 'object') {
+      hydrationData.dates = {};
+    }
+    
+    // Extra safety check for the date entry
+    if (!hydrationData.dates[today]) {
+      hydrationData.dates[today] = {
+        activities: [],
+        totalIntake: 0
+      };
+    }
+    
     // Calculate new intake
     const currentIntake = hydrationData.dates[today].totalIntake || 0;
     const newIntake = currentIntake + validatedAmount;
@@ -564,21 +832,46 @@ function addWaterIntake(amount, drinkType = 'water') {
     // Update data structures
     updateHydrationData(today, time, validatedAmount, validatedType, newIntake);
     
-    // Animate UI changes
-    requestAnimationFrame(() => {
-      animateWaterChanges(currentIntake, newIntake);
-    });
-    
-    // Play sound if enabled
-    if (settings.sound) {
-      playDropSound().catch(() => {/* Ignore sound errors */});
+    // Safely update UI with animation
+    try {
+      // Animate UI changes
+      requestAnimationFrame(() => {
+        try {
+          animateWaterChanges(currentIntake, newIntake);
+        } catch (animationError) {
+          console.error('Animation error:', animationError);
+          // Continue with UI updates even if animation fails
+        }
+        
+        // Play sound if enabled
+        if (settings.sound) {
+          playDropSound().catch(soundError => {
+            console.warn('Sound error:', soundError);
+            // Ignore sound errors
+          });
+        }
+        
+        // Update UI and save data
+        requestAnimationFrame(() => {
+          try {
+            updateUIAfterIntake();
+            debouncedSave();
+          } catch (uiError) {
+            console.error('UI update error:', uiError);
+            // Try fallback update if the main one fails
+            try {
+              updateUI();
+            } catch (fallbackError) {
+              console.error('Fallback UI update failed:', fallbackError);
+            }
+          }
+        });
+      });
+    } catch (uiError) {
+      console.error('UI update process error:', uiError);
+      // Try direct UI update as fallback
+      updateUI();
     }
-    
-    // Update UI and save data
-    requestAnimationFrame(() => {
-      updateUIAfterIntake();
-      debouncedSave();
-    });
     
     // Set success flag BEFORE showing toast
     lastWaterIntakeSuccessful = true;
@@ -593,50 +886,89 @@ function addWaterIntake(amount, drinkType = 'water') {
   } catch (error) {
     lastWaterIntakeSuccessful = false;
     ErrorHandler.handle(error, 'water-intake');
+    
+    // Try to update the UI anyway to maintain consistency
+    try {
+      updateUI();
+    } catch (uiError) {
+      console.error('Failed to update UI after error:', uiError);
+    }
+    
     return false; // Failure indicator
   }
 }
 
-// Validate water amount
+// Improved water amount validation with better error handling
 function validateWaterAmount(amount) {
-  // Convert to proper number for validation
-  let valueToValidate;
-  
-  // If it's already a number, use it directly
-  if (typeof amount === 'number' && !isNaN(amount)) {
-    valueToValidate = amount;
-  } 
-  // If it's a string, parse it
-  else if (typeof amount === 'string') {
-    // Remove any non-numeric characters first
-    const cleanedInput = amount.trim().replace(/[^0-9]/g, '');
-    valueToValidate = parseInt(cleanedInput, 10);
-  } 
-  // Otherwise, treat as invalid
-  else {
-    console.log('Invalid amount: not a number or string');
-    return null;
+  try {
+    // Handle null, undefined or empty values
+    if (amount === null || amount === undefined) {
+      console.log('Invalid amount: null or undefined');
+      return null;
+    }
+    
+    // Convert to proper number for validation
+    let valueToValidate;
+    
+    // If it's already a number, use it directly
+    if (typeof amount === 'number') {
+      // Check for NaN, Infinity, -Infinity
+      if (!isFinite(amount)) {
+        console.log(`Invalid amount: ${amount} is not a finite number`);
+        return null;
+      }
+      valueToValidate = amount;
+    } 
+    // If it's a string, parse it
+    else if (typeof amount === 'string') {
+      // Handle empty strings
+      if (!amount.trim()) {
+        console.log('Invalid amount: empty string');
+        return null;
+      }
+      
+      // Remove any non-numeric characters first
+      const cleanedInput = amount.trim().replace(/[^0-9]/g, '');
+      
+      // Handle case where all characters were removed
+      if (!cleanedInput) {
+        console.log('Invalid amount: no numeric characters');
+        return null;
+      }
+      
+      valueToValidate = parseInt(cleanedInput, 10);
+    } 
+    // Otherwise, treat as invalid
+    else {
+      console.log(`Invalid amount: not a number or string (${typeof amount})`);
+      return null;
+    }
+    
+    // Check for parsing errors
+    if (isNaN(valueToValidate)) {
+      console.log('Invalid amount: parsed to NaN');
+      return null;
+    }
+    
+    // Check for negative or zero
+    if (valueToValidate <= 0) {
+      console.log(`Invalid amount: ${valueToValidate} <= 0`);
+      return null;
+    }
+    
+    // Check for too large values
+    if (valueToValidate > 2000) {
+      console.log(`Invalid amount: ${valueToValidate} > 2000`);
+      return null;
+    }
+    
+    // Valid amount
+    console.log(`Validated amount: ${valueToValidate}`);
+    return valueToValidate;
+  } catch (error) {
+    console.error('Error in validateWaterAmount:', error);
+    return null; // Return null on any exception
   }
-  
-  // Check for valid range
-  if (isNaN(valueToValidate)) {
-    console.log('Invalid amount: parsed to NaN');
-    return null;
-  }
-  
-  if (valueToValidate <= 0) {
-    console.log(`Invalid amount: ${valueToValidate} <= 0`);
-    return null;
-  }
-  
-  if (valueToValidate > 2000) {
-    console.log(`Invalid amount: ${valueToValidate} > 2000`);
-    return null;
-  }
-  
-  // Valid amount
-  console.log(`Validated amount: ${valueToValidate}`);
-  return valueToValidate;
 }
 
 // Validate drink type
@@ -793,30 +1125,85 @@ function attachWaterButtonEvents() {
   });
 }
 
-// Improved UI update function
+// Improved UI update function with error recovery
 function updateUI() {
   try {
-    requestAnimationFrame(() => {
-      // Update progress display
-      if (currentIntakeEl) currentIntakeEl.textContent = hydrationData.todayIntake || 0;
-      if (targetIntakeEl) targetIntakeEl.textContent = settings.dailyTarget || 2000;
-      
-      const progressPercentage = calculateProgressPercentage();
-      
-      // Batch DOM updates
-      requestAnimationFrame(() => {
-        if (progressFill) progressFill.style.width = `${progressPercentage}%`;
-        if (waterFill) {
-          waterFill.style.height = `${progressPercentage}%`;
-          waterFill.style.transition = 'height 0.5s ease-out';
+    // Ensure we safely update the UI with animation frame
+    const safeUpdate = () => {
+      try {
+        // Safely update intake elements
+        if (currentIntakeEl) {
+          try {
+            currentIntakeEl.textContent = hydrationData.todayIntake || 0;
+          } catch (elementError) {
+            console.warn('Failed to update current intake element:', elementError);
+          }
         }
         
-        // Update remaining UI elements
-        updateRemainingUI();
-      });
-    });
+        if (targetIntakeEl) {
+          try {
+            targetIntakeEl.textContent = settings.dailyTarget || 2000;
+          } catch (elementError) {
+            console.warn('Failed to update target intake element:', elementError);
+          }
+        }
+        
+        // Calculate progress with bounds checking
+        const progressPercentage = calculateProgressPercentage();
+        
+        // Batch DOM updates in another frame
+        requestAnimationFrame(() => {
+          try {
+            // Safely update progress bar
+            if (progressFill) {
+              try {
+                progressFill.style.width = `${progressPercentage}%`;
+              } catch (progressError) {
+                console.warn('Failed to update progress bar:', progressError);
+              }
+            }
+            
+            // Safely update water fill
+            if (waterFill) {
+              try {
+                waterFill.style.height = `${progressPercentage}%`;
+                waterFill.style.transition = 'height 0.5s ease-out';
+              } catch (waterError) {
+                console.warn('Failed to update water fill:', waterError);
+              }
+            }
+            
+            // Update remaining UI elements
+            setTimeout(() => {
+              try {
+                updateRemainingUI();
+              } catch (remainingError) {
+                console.error('Failed to update remaining UI:', remainingError);
+              }
+            }, 50); // Small delay to spread out UI updates
+          } catch (innerFrameError) {
+            console.error('Error in inner animation frame:', innerFrameError);
+          }
+        });
+      } catch (frameError) {
+        console.error('Error in animation frame:', frameError);
+      }
+    };
+    
+    // Use requestAnimationFrame for UI updates
+    requestAnimationFrame(safeUpdate);
   } catch (error) {
     ErrorHandler.handle(error, 'ui-update', false); // Don't show toast for UI updates
+    
+    // Attempt emergency UI update for critical elements
+    try {
+      // Critical elements: current intake and target
+      if (currentIntakeEl) currentIntakeEl.textContent = hydrationData.todayIntake || 0;
+      if (targetIntakeEl) targetIntakeEl.textContent = settings.dailyTarget || 2000;
+      if (waterFill) waterFill.style.height = `${calculateProgressPercentage()}%`;
+    } catch (emergencyError) {
+      console.error('Emergency UI update failed:', emergencyError);
+    }
   }
 }
 
@@ -1854,99 +2241,80 @@ function playNotificationSound() {
   audio.play().catch(err => console.error('Error playing sound:', err));
 }
 
-// Show toast notification
+// Improved toast notification system
 function showToast(message, type = 'info', duration = 3000) {
   try {
-    // Prevent duplicate toasts within a short timeframe
-    const toastKey = `${message}-${type}`;
-    if (window.lastToasts && window.lastToasts[toastKey]) {
-      const timeSince = Date.now() - window.lastToasts[toastKey];
-      if (timeSince < 3000) {
-        // Don't show duplicate toast within 3 seconds
-        console.log(`Prevented duplicate toast: ${message}`);
-        return;
-      }
-    }
-    
-    // Track this toast
-    if (!window.lastToasts) window.lastToasts = {};
-    window.lastToasts[toastKey] = Date.now();
-    
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    
-    // Get container
-    const toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-      console.error('Toast container not found');
+    // Safety check for message
+    if (!message) {
+      console.warn('Empty toast message');
       return;
     }
     
-    // Special handling for success messages - remove all error messages
-    if (type === 'success') {
-      // Remove any error toasts since we have a success
-      const errorToasts = toastContainer.querySelectorAll('.toast-error');
-      errorToasts.forEach(errorToast => {
-        errorToast.remove();
-      });
+    // Get or create toast container
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.id = 'toast-container';
+      document.body.appendChild(toastContainer);
     }
     
-    // Special handling for error messages - don't show if a success message is active
-    if (type === 'error') {
-      // Check if a success message is present
-      const successToasts = toastContainer.querySelectorAll('.toast-success');
-      if (successToasts.length > 0) {
-        // If the last water intake was successful, don't show this error
-        if (lastWaterIntakeSuccessful) {
-          console.log('Suppressing error toast due to successful water intake');
-          return;
-        }
+    // Limit concurrent toasts to prevent overflow
+    const maxToasts = 3;
+    const existingToasts = toastContainer.querySelectorAll('.toast');
+    if (existingToasts.length >= maxToasts) {
+      // Remove oldest toast
+      const oldestToast = existingToasts[0];
+      if (oldestToast && oldestToast.parentNode) {
+        oldestToast.parentNode.removeChild(oldestToast);
       }
     }
     
-    // Remove existing toasts with the same message if any
-    const existingToasts = toastContainer.querySelectorAll('.toast');
-    existingToasts.forEach(existingToast => {
-      if (existingToast.textContent === message) {
-        existingToast.remove();
+    // Remove existing toast with same message to prevent duplicates
+    const existingToast = Array.from(existingToasts)
+      .find(toast => toast.textContent.trim() === message);
+    if (existingToast && existingToast.parentNode) {
+      existingToast.parentNode.removeChild(existingToast);
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type || 'info'}`;
+    toast.innerText = message;
+    toast.setAttribute('role', 'alert');
+    
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', () => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
       }
     });
-    
-    // Maximum number of toasts to display at once
-    const maxToasts = 2;
-    
-    // If we already have too many toasts, remove the oldest one
-    const currentToasts = toastContainer.querySelectorAll('.toast');
-    if (currentToasts.length >= maxToasts) {
-      toastContainer.removeChild(currentToasts[0]);
-    }
+    toast.appendChild(closeBtn);
     
     // Add to container
     toastContainer.appendChild(toast);
     
-    // Trigger animation
+    // Auto-remove after duration
     setTimeout(() => {
-      toast.classList.add('show');
-    }, 10);
-    
-    // Remove after timeout
-    setTimeout(() => {
-      if (toast.classList) {
-        toast.classList.remove('show');
+      // Check if toast still exists
+      if (toast && toast.parentNode) {
+        // Add exit animation class
+        toast.classList.add('toast-exit');
+        
+        // Remove after animation
+        setTimeout(() => {
+          if (toast && toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
       }
-      
-      setTimeout(() => {
-        if (toast.parentNode === toastContainer) {
-          toastContainer.removeChild(toast);
-        }
-      }, 300);
     }, duration);
   } catch (error) {
-    // Fallback to console if toast fails
-    console.error('Error displaying toast:', error);
-    console.log(`TOAST (${type}): ${message}`);
+    // Even toast notifications can fail, handle gracefully
+    console.error('Error displaying toast notification:', error);
+    // Don't try to show another toast as that might cause a loop
   }
 }
 
@@ -2336,47 +2704,6 @@ class FreezeDetector {
 
 // Khởi tạo bộ phát hiện đứng hình
 const freezeDetector = new FreezeDetector();
-
-// Add the window load event listener
-window.addEventListener('load', () => {
-  setTimeout(addEmergencyButton, 2000);
-  
-  // Add global error handling
-  window.addEventListener('error', (event) => {
-    console.error('Uncaught error:', event.error);
-    showToast('An error occurred: ' + (event.error?.message || 'Unknown error'), 'error');
-    
-    // Try to handle error to keep app functioning
-    if (event.error && event.error.message && (
-      event.error.message.includes('undefined') || 
-      event.error.message.includes('null') ||
-      event.error.message.includes('not a function')
-    )) {
-      // Try to repair inconsistent data
-      repairDataInconsistencies();
-    }
-    
-    // Prevent default behavior
-    event.preventDefault();
-  });
-  
-  // Initialize freeze detector
-  setTimeout(() => {
-    // Start freeze detection
-    freezeDetector.start();
-    
-    // Register callback
-    freezeDetector.onFreeze(isFrozen => {
-      if (isFrozen) {
-        showToast('App performance issue detected', 'warning');
-      } else {
-        showToast('App is responsive again', 'success');
-      }
-    });
-    
-    console.log('Freeze detection started');
-  }, 3000);
-});
 
 // Add missing calculateProgressPercentage function
 function calculateProgressPercentage() {

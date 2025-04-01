@@ -4,217 +4,291 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hydration Reminder</title>
-  <link rel="stylesheet" href="src/styles.css">
+  
+  <!-- Preload CSS to tải nhanh hơn -->
+  <link rel="preload" href="./assets/popup.css" as="style">
+  <link rel="stylesheet" href="./assets/popup.css">
+  
+  <!-- Fallback CSS trong trường hợp file chính không tải được -->
+  <noscript>
+    <style>
+      :root {
+        --primary-color: #3b82f6;
+        --text-color: #1f2937;
+        --bg-color: #ffffff;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 10px;
+      }
+    </style>
+  </noscript>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-background text-foreground">
-  <!-- Toast Container -->
-  <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+<body>
+  <div class="app-container">
+    <!-- Tab Navigation -->
+    <div class="tab-navigation" id="tab-navigation">
+      <button class="tab-trigger" data-state="active" data-tab="dashboard" id="dashboard-tab">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        Dashboard
+      </button>
+      <button class="tab-trigger" data-tab="stats" id="stats-tab">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 12V8"></path><path d="M14 12V6"></path><path d="M10 12V4"></path><path d="M6 12v-4"></path></svg>
+        Stats
+      </button>
+      <button class="tab-trigger" data-tab="insights" id="insights-tab">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+        Insights
+      </button>
+      <button class="tab-trigger" data-tab="settings" id="settings-tab">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        Settings
+      </button>
+    </div>
 
-  <!-- Tab Navigation -->
-  <nav class="flex border-b border-border mb-4">
-    <button id="dashboard-tab" data-tab="dashboard" class="tab-trigger" data-state="active">
-      Dashboard
-    </button>
-    <button id="stats-tab" data-tab="stats" class="tab-trigger">
-      Stats
-    </button>
-    <button id="insights-tab" data-tab="insights" class="tab-trigger">
-      Insights
-    </button>
-    <button id="settings-tab" data-tab="settings" class="tab-trigger">
-      Settings
-    </button>
-  </nav>
-
-  <!-- Tab Contents -->
-  <div class="tab-contents">
-    <!-- Dashboard Tab -->
-    <div id="dashboard-content" data-tab-content="dashboard" data-state="active">
-      <div class="p-4">
-        <!-- Date and Streak -->
-        <div class="flex justify-between items-center mb-4">
-          <div id="date-display" class="text-lg font-semibold"></div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">Streak</span>
-            <div class="bg-primary/10 px-2 py-1 rounded-full">
-              <span id="streak-count" class="font-medium text-primary">0</span>
-              <span class="text-primary">🔥</span>
+    <!-- Tab Contents -->
+    <div class="tab-contents">
+      <!-- Dashboard Tab -->
+      <div class="tab-content" data-tab-content="dashboard" id="dashboard-content" data-state="active">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+          <h2>Hydration Dashboard</h2>
+          <div class="streak-badge">
+            <div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+              <span id="streak-count">0</span>
             </div>
           </div>
+          <div id="date-display" class="date-display"></div>
         </div>
 
-        <!-- Water Bottle Visualization -->
-        <div id="water-bottle" class="water-bottle">
-          <div class="water-bottle-cap"></div>
-          <div id="water-fill" class="water-fill">
-            <div id="water-wave" class="water-wave"></div>
+        <!-- Main Hydration Display -->
+        <div class="hydration-main">
+          <!-- Water Bottle Visualization -->
+          <div class="water-visualization">
+            <div class="water-bottle" id="water-bottle">
+              <div class="water-bottle-cap"></div>
+              <div class="water-bottle-label">
+                <span id="hydration-score" class="text-center text-lg font-bold">0%</span>
+              </div>
+              <div id="water-fill" class="water-fill" style="height: 0%">
+                <div id="water-wave" class="water-wave"></div>
+              </div>
+              <div class="water-bottle-markers">
+                <div class="water-bottle-marker" style="bottom: 20%">
+                  <span class="water-bottle-marker-label">80%</span>
+                </div>
+                <div class="water-bottle-marker" style="bottom: 40%">
+                  <span class="water-bottle-marker-label">60%</span>
+                </div>
+                <div class="water-bottle-marker" style="bottom: 60%">
+                  <span class="water-bottle-marker-label">40%</span>
+                </div>
+                <div class="water-bottle-marker" style="bottom: 80%">
+                  <span class="water-bottle-marker-label">20%</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <!-- Progress Information -->
-        <div class="grid grid-cols-2 gap-4 mb-6">
-          <div class="card p-4 text-center">
-            <div class="text-sm text-muted-foreground">Current</div>
-            <div id="current-intake" class="text-2xl font-bold">0</div>
-            <div class="text-sm">ml</div>
+          <!-- Hydration Stats -->
+          <div class="hydration-stats">
+            <div class="stats-main">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 6.5 14 3l-1.5 4-6-1.5L4 12l6.3 1.5 1.2 6 5-1.5 1.4-6.5L14 10l2.5-6"></path></svg>
+                </div>
+                <div>
+                  <div class="stat-value"><span id="current-intake">0</span> ml</div>
+                  <div class="stat-label">Current intake</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13V7"></path><path d="M15.45 15.4 12 12"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                </div>
+                <div>
+                  <div class="stat-value"><span id="target-intake">2000</span> ml</div>
+                  <div class="stat-label">Daily target</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="progress-container">
+              <div id="progress-fill" class="progress-value" style="width: 0%"></div>
+            </div>
+            
+            <div class="stats-secondary">
+              <div class="stat-card-mini">
+                <div class="stat-value-mini"><span id="remaining-intake">2000</span>ml</div>
+                <div class="stat-label">Remaining</div>
+              </div>
+              <div class="stat-card-mini">
+                <div class="stat-value-mini"><span id="drink-count">0</span></div>
+                <div class="stat-label">Drinks today</div>
+              </div>
+              <div class="stat-card-mini">
+                <div class="stat-value-mini"><span id="hydration-score-mini">0</span>%</div>
+                <div class="stat-label">Hydration score</div>
+              </div>
+            </div>
           </div>
-          <div class="card p-4 text-center">
-            <div class="text-sm text-muted-foreground">Target</div>
-            <div id="target-intake" class="text-2xl font-bold">2000</div>
-            <div class="text-sm">ml</div>
-          </div>
-        </div>
-
-        <!-- Additional Stats -->
-        <div class="grid grid-cols-3 gap-4 mb-6">
-          <div class="card p-3 text-center">
-            <div class="text-sm text-muted-foreground">Remaining</div>
-            <div id="remaining-intake" class="text-lg font-bold">2000</div>
-            <div class="text-xs">ml</div>
-          </div>
-          <div class="card p-3 text-center">
-            <div class="text-sm text-muted-foreground">Drinks</div>
-            <div id="drink-count" class="text-lg font-bold">0</div>
-            <div class="text-xs">today</div>
-          </div>
-          <div class="card p-3 text-center">
-            <div class="text-sm text-muted-foreground">Score</div>
-            <div id="hydration-score" class="text-lg font-bold">0</div>
-            <div class="text-xs">points</div>
-          </div>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-container mb-4">
-          <div id="progress-fill" class="progress-value" style="width: 0%"></div>
         </div>
 
         <!-- Hydration Feedback -->
-        <div id="hydration-feedback" class="text-center text-sm text-muted-foreground mb-6"></div>
-
-        <!-- Quick Add Buttons -->
-        <div class="grid grid-cols-3 gap-2 mb-4">
-          <button class="water-btn btn btn-water" data-amount="100">100ml</button>
-          <button class="water-btn btn btn-water" data-amount="200">200ml</button>
-          <button class="water-btn btn btn-water" data-amount="300">300ml</button>
+        <div class="hydration-feedback">
+          <span id="hydration-feedback">Ready to start tracking your hydration!</span>
         </div>
 
-        <!-- Drink Type Selection -->
-        <div class="flex justify-center gap-2 mb-4">
-          <button data-drink-type="water" class="btn btn-icon active">💧</button>
-          <button data-drink-type="coffee" class="btn btn-icon">☕</button>
-          <button data-drink-type="tea" class="btn btn-icon">🍵</button>
+        <!-- Activity Log -->
+        <div class="activity-section">
+          <h3>Today's Activity</h3>
+          <div id="activity-log" class="activity-log"></div>
         </div>
 
-        <!-- Custom Amount Input -->
-        <div class="mb-4">
-          <button id="custom-amount" class="btn btn-secondary w-full">Custom Amount</button>
-          <div id="custom-input" class="hidden mt-2">
-            <div class="flex gap-2">
-              <input type="number" id="custom-amount-input" class="form-control" placeholder="Enter ml">
-              <button id="add-custom" class="btn btn-primary">Add</button>
-              <button id="cancel-custom" class="btn btn-secondary">Cancel</button>
+        <!-- Drink Controls -->
+        <div class="drink-control">
+          <!-- Drink Types -->
+          <div class="drink-types">
+            <button class="drink-type-btn active" data-drink-type="water">
+              <span class="drink-icon">💧</span>
+              <span>Water</span>
+            </button>
+            <button class="drink-type-btn" data-drink-type="coffee">
+              <span class="drink-icon">☕</span>
+              <span>Coffee</span>
+            </button>
+            <button class="drink-type-btn" data-drink-type="tea">
+              <span class="drink-icon">🍵</span>
+              <span>Tea</span>
+            </button>
+            <button class="drink-type-btn" data-drink-type="juice">
+              <span class="drink-icon">🧃</span>
+              <span>Juice</span>
+            </button>
+          </div>
+          
+          <!-- Quick Add Buttons -->
+          <div class="quick-add-buttons">
+            <button class="water-btn ripple" data-amount="50">+ 50ml</button>
+            <button class="water-btn ripple" data-amount="100">+ 100ml</button>
+            <button class="water-btn ripple" data-amount="150">+ 150ml</button>
+            <button class="water-btn ripple" data-amount="200">+ 200ml</button>
+            <button class="water-btn ripple" data-amount="250">+ 250ml</button>
+            <button class="water-btn ripple" data-amount="300">+ 300ml</button>
+          </div>
+          
+          <!-- Custom Amount -->
+          <div class="custom-amount-container">
+            <button id="custom-amount" class="btn-custom">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+              Add Custom Amount
+            </button>
+            <div id="custom-input" class="custom-input hidden">
+              <input type="number" id="custom-amount-input" class="form-control" placeholder="Enter amount in ml" min="10" max="1000">
+              <div class="custom-input-buttons">
+                <button id="add-custom" class="btn-primary">Add</button>
+                <button id="cancel-custom" class="btn-secondary">Cancel</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Stats Tab -->
-    <div id="stats-content" data-tab-content="stats" class="hidden">
-      <div class="p-4">
-        <div id="chart-container" class="h-48 mb-4"></div>
-        <div id="activity-log" class="border rounded-lg divide-y"></div>
+      <!-- Stats Tab -->
+      <div class="tab-content hidden" data-tab-content="stats" id="stats-content">
+        <h2>Hydration Statistics</h2>
+        <!-- Stats content here -->
       </div>
-    </div>
 
-    <!-- Insights Tab -->
-    <div id="insights-content" data-tab-content="insights" class="hidden">
-      <div class="p-4">
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <div class="card p-4">
-            <div class="text-sm text-muted-foreground">Weekly Completion</div>
-            <div id="weekly-completion" class="text-2xl font-bold">0%</div>
-            <div class="relative h-2 mt-2">
-              <div id="weekly-progress-circle" class="absolute inset-0 bg-primary rounded-full"></div>
+      <!-- Insights Tab -->
+      <div class="tab-content hidden" data-tab-content="insights" id="insights-content">
+        <h2>Hydration Insights</h2>
+        <div id="chart-container" class="chart-container"></div>
+        <div id="ai-insight" class="ai-insight"></div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div class="tab-content hidden" data-tab-content="settings" id="settings-content">
+        <h2>Settings</h2>
+        <div class="settings-form">
+          <div class="form-group">
+            <label for="daily-target">Daily Target (ml)</label>
+            <input type="number" id="daily-target" class="form-control" value="2000" min="500" max="5000">
+          </div>
+          <div class="form-group">
+            <label for="reminder-interval">Reminder Interval (min)</label>
+            <input type="number" id="reminder-interval" class="form-control" value="60" min="15" max="240">
+          </div>
+          <div class="form-group">
+            <label>Notification Settings</label>
+            <div class="toggle-control">
+              <label class="switch">
+                <input type="checkbox" id="notifications-enabled" checked>
+                <span class="slider"></span>
+              </label>
+              <span>Enable notifications</span>
             </div>
           </div>
-          <div class="card p-4">
-            <div class="text-sm text-muted-foreground">Weekly Average</div>
-            <div id="weekly-avg-ml" class="text-2xl font-bold">0 ml</div>
-            <div class="relative h-2 mt-2">
-              <div id="weekly-avg-progress" class="absolute inset-0 bg-primary rounded-full"></div>
+          <div class="form-group">
+            <label>Sound Settings</label>
+            <div class="sound-settings">
+              <div class="toggle-control">
+                <label class="switch">
+                  <input type="checkbox" id="sound-toggle" checked>
+                  <span class="slider"></span>
+                </label>
+                <span>Enable sounds</span>
+              </div>
+              <div class="select-wrapper">
+                <select id="sound-select" class="form-control">
+                  <option value="water-drop">Water Drop</option>
+                  <option value="bell">Bell</option>
+                  <option value="chime">Chime</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-        <div id="ai-insight" class="card p-4 mb-4 text-sm"></div>
-      </div>
-    </div>
-
-    <!-- Settings Tab -->
-    <div id="settings-content" data-tab-content="settings" class="hidden">
-      <div class="p-4">
-        <div class="form-item">
-          <label class="form-label" for="daily-target">Daily Target (ml)</label>
-          <input type="number" id="daily-target" class="form-control" value="2000">
-        </div>
-        <div class="form-item">
-          <label class="form-label" for="reminder-interval">Reminder Interval</label>
-          <select id="reminder-interval" class="form-control">
-            <option value="30">30 minutes</option>
-            <option value="60">1 hour</option>
-            <option value="120">2 hours</option>
-          </select>
-        </div>
-        <div class="form-item">
-          <label class="form-label">Notifications</label>
-          <div class="flex items-center">
-            <input type="checkbox" id="notifications-enabled" class="switch">
-            <label class="ml-2" for="notifications-enabled">Enable notifications</label>
+          <div class="form-group">
+            <label>App Behavior</label>
+            <div class="toggle-control">
+              <label class="switch">
+                <input type="checkbox" id="fullscreen-pause">
+                <span class="slider"></span>
+              </label>
+              <span>Pause reminders when in full-screen mode</span>
+            </div>
           </div>
-        </div>
-        <div class="form-item">
-          <label class="form-label">Fullscreen Mode</label>
-          <div class="flex items-center">
-            <input type="checkbox" id="fullscreen-pause" class="switch">
-            <label class="ml-2" for="fullscreen-pause">Pause reminders in fullscreen</label>
+          <div class="form-group">
+            <label>Theme</label>
+            <div class="theme-selector">
+              <button data-theme="light" class="theme-button active" aria-label="Light theme">
+                <span class="theme-circle light"></span>
+                <span>Light</span>
+              </button>
+              <button data-theme="dark" class="theme-button" aria-label="Dark theme">
+                <span class="theme-circle dark"></span>
+                <span>Dark</span>
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="form-item">
-          <label class="form-label">Sound</label>
-          <div class="flex items-center">
-            <input type="checkbox" id="sound-toggle" class="switch">
-            <label class="ml-2" for="sound-toggle">Enable sound</label>
+          <div class="form-actions">
+            <button id="save-settings" class="btn-primary ripple">Save Settings</button>
           </div>
-        </div>
-        <div class="form-item">
-          <label class="form-label" for="sound-select">Notification Sound</label>
-          <select id="sound-select" class="form-control">
-            <option value="water-drop">Water Drop</option>
-            <option value="bell">Bell</option>
-            <option value="chime">Chime</option>
-          </select>
-        </div>
-        <div class="form-item">
-          <label class="form-label">Theme</label>
-          <div class="flex gap-2">
-            <button data-theme="light" class="btn btn-icon">☀️</button>
-            <button data-theme="dark" class="btn btn-icon">🌙</button>
-          </div>
-        </div>
-        <div class="mt-6">
-          <button id="save-settings" class="btn btn-primary w-full mb-2">Save Settings</button>
-          <button id="export-data" class="btn btn-secondary w-full mb-2">Export Data</button>
-          <button id="clear-data" class="btn btn-destructive w-full">Clear Data</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script type="module" src="src/popup.js"></script>
+  <div id="toast-container" class="toast-container"></div>
+  
+  <script type="module" src="/src/popup.js"></script>
 </body>
 </html> 

@@ -1,79 +1,35 @@
 // build.js
-const fs = require('fs');
-const path = require('path');
+import { copyFile, cp } from 'fs/promises';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
-// Đảm bảo thư mục dist tồn tại
-if (!fs.existsSync('./dist')) {
-  fs.mkdirSync('./dist', { recursive: true });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+async function copyFiles() {
+  try {
+    // Copy manifest.json
+    await copyFile('manifest.json', 'dist/manifest.json');
+    console.log('Copying manifest.json to dist...');
+
+    // Copy icons directory
+    await cp('icons', 'dist/icons', { recursive: true });
+    console.log('Copying icons directory...');
+
+    // Copy public directory if it exists
+    await cp('public', 'dist/public', { recursive: true });
+    console.log('Copying public directory...');
+
+    // Copy audio directory if it exists
+    await cp('audio', 'dist/audio', { recursive: true });
+    console.log('Copying audio directory...');
+
+    console.log('Build process completed successfully!');
+  } catch (error) {
+    console.error('Error during build process:', error);
+    process.exit(1);
+  }
 }
 
-// Copy manifest.json
-console.log('Copying manifest.json to dist...');
-fs.copyFileSync('./manifest.json', './dist/manifest.json');
-
-// Copy thư mục icons
-console.log('Copying icons directory...');
-const iconsDir = './icons';
-const destIconsDir = './dist/icons';
-
-if (fs.existsSync(iconsDir)) {
-  if (!fs.existsSync(destIconsDir)) {
-    fs.mkdirSync(destIconsDir, { recursive: true });
-  }
-  
-  const iconFiles = fs.readdirSync(iconsDir);
-  for (const file of iconFiles) {
-    fs.copyFileSync(path.join(iconsDir, file), path.join(destIconsDir, file));
-  }
-}
-
-// Copy thư mục public
-console.log('Copying public directory...');
-const publicDir = './public';
-const destPublicDir = './dist/public';
-
-if (fs.existsSync(publicDir)) {
-  if (!fs.existsSync(destPublicDir)) {
-    fs.mkdirSync(destPublicDir, { recursive: true });
-  }
-  
-  function copyDir(src, dest) {
-    const entries = fs.readdirSync(src, { withFileTypes: true });
-    
-    for (const entry of entries) {
-      const srcPath = path.join(src, entry.name);
-      const destPath = path.join(dest, entry.name);
-      
-      if (entry.isDirectory()) {
-        if (!fs.existsSync(destPath)) {
-          fs.mkdirSync(destPath, { recursive: true });
-        }
-        copyDir(srcPath, destPath);
-      } else {
-        fs.copyFileSync(srcPath, destPath);
-      }
-    }
-  }
-  
-  copyDir(publicDir, destPublicDir);
-}
-
-// Copy thư mục audio
-console.log('Copying audio directory...');
-const audioDir = './audio';
-const destAudioDir = './dist/audio';
-
-if (fs.existsSync(audioDir)) {
-  if (!fs.existsSync(destAudioDir)) {
-    fs.mkdirSync(destAudioDir, { recursive: true });
-  }
-  
-  copyDir(audioDir, destAudioDir);
-}
-
-// Đảm bảo thư mục assets tồn tại trong dist
-if (!fs.existsSync('./dist/assets')) {
-  fs.mkdirSync('./dist/assets', { recursive: true });
-}
-
-console.log('Build process completed successfully!'); 
+copyFiles(); 

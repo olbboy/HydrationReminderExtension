@@ -98,280 +98,418 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     min-width: 350px;
     min-height: 500px;
+    max-width: 400px;
+    max-height: 600px;
     overflow-x: hidden;
   }
 }
 
 @layer components {
-  /* Button Styles - Enhanced */
-  .btn {
-    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors 
-    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50
-    active:scale-[0.98] active:opacity-90;
+  /* App Container - New */
+  .app-container {
+    @apply flex flex-col h-screen max-h-[600px] relative;
   }
   
-  .btn-primary {
-    @apply bg-primary text-primary-foreground shadow hover:bg-primary/90;
+  /* Tab Navigation - Redesigned */
+  .tab-navigation {
+    @apply flex border-b border-border mb-2 bg-background sticky top-0 z-10 w-full justify-between;
   }
   
-  .btn-secondary {
-    @apply bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80;
+  .tab-trigger {
+    @apply flex flex-col items-center justify-center py-2 px-3 text-sm text-muted-foreground transition-colors relative hover:text-foreground;
   }
   
-  .btn-water {
-    @apply bg-primary/10 text-primary hover:bg-primary/20 relative overflow-hidden;
+  .tab-trigger[data-state="active"] {
+    @apply text-primary;
   }
   
-  .btn-icon {
-    @apply h-9 w-9 p-0 flex items-center justify-center;
+  .tab-trigger[data-state="active"]::after {
+    content: '';
+    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full;
   }
   
-  /* Card Styles - Enhanced */
-  .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow transition-all hover:shadow-md;
+  .tab-trigger svg {
+    @apply mb-1;
   }
   
-  .card-header {
-    @apply flex flex-col space-y-1.5 p-4 pb-2;
-  }
-  
-  .card-title {
-    @apply font-semibold leading-none tracking-tight;
-  }
-  
-  .card-description {
-    @apply text-sm text-muted-foreground;
-  }
-  
-  .card-content {
-    @apply p-4 pt-0;
-  }
-  
-  .card-footer {
-    @apply flex items-center p-4 pt-0;
-  }
-  
-  /* New Component: Sidebar */
-  .sidebar {
-    @apply fixed left-0 top-0 h-full w-16 bg-card border-r border-border flex flex-col items-center py-4 gap-6;
+  /* Tab Contents */
+  .tab-contents {
+    @apply flex-1 overflow-y-auto overflow-x-hidden;
   }
 
-  .sidebar-item {
-    @apply w-10 h-10 rounded-md flex items-center justify-center cursor-pointer hover:bg-primary/10 
-    transition-colors text-muted-foreground data-[active=true]:bg-primary/20 data-[active=true]:text-primary;
+  /* Dashboard Tab */
+  .dashboard-header {
+    @apply flex justify-between items-center p-4 pb-2;
   }
   
-  /* New: Water Bottle Visualization */
+  .streak-badge {
+    @apply flex flex-col items-center;
+  }
+  
+  .streak-badge > div {
+    @apply flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full;
+  }
+  
+  .hydration-main {
+    @apply flex flex-col md:flex-row md:items-center gap-4 px-4 mb-4;
+  }
+  
+  .water-visualization {
+    @apply flex justify-center md:w-1/2;
+  }
+  
+  .hydration-stats {
+    @apply flex flex-col gap-4 md:w-1/2;
+  }
+  
+  .progress-container {
+    @apply h-2 bg-secondary rounded-full mx-4 mb-4 overflow-hidden;
+  }
+  
+  .progress-value {
+    @apply h-full bg-primary rounded-full transition-all duration-300 ease-out;
+  }
+  
+  .hydration-feedback {
+    @apply text-center text-sm text-muted-foreground mt-2 min-h-[3rem] flex items-center justify-center;
+  }
+  
+  /* New Water Bottle */
   .water-bottle {
-    @apply relative w-32 h-64 mx-auto mb-6 rounded-3xl border-4 border-primary/30 overflow-hidden bg-white/30 dark:bg-black/10;
+    @apply relative w-32 h-64 mx-auto rounded-3xl border-4 border-primary/30 overflow-hidden bg-white/30 dark:bg-black/10 shadow-lg;
   }
   
   .water-bottle-cap {
     @apply absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-6 bg-primary/30 rounded-t-xl;
   }
   
+  .water-bottle-label {
+    @apply absolute top-8 left-0 right-0 z-10 text-center;
+  }
+  
   .water-fill {
-    @apply absolute bottom-0 w-full bg-primary/70 rounded-b-xl;
+    @apply absolute bottom-0 left-0 right-0 bg-primary/70 transition-all duration-700 ease-out;
   }
   
   .water-wave {
     @apply absolute top-0 left-0 w-full h-6 bg-primary/90;
-    animation: wave 2s infinite linear;
+    animation: wave var(--water-wave-speed) infinite linear;
   }
   
   .water-bottle-markers {
-    @apply absolute inset-0 flex flex-col justify-between py-8;
+    @apply absolute inset-0 flex flex-col justify-between py-8 pointer-events-none;
   }
   
   .water-bottle-marker {
-    @apply relative border-t border-dashed border-secondary-foreground/20 h-0;
-  }
-  
-  .water-bottle-marker::before {
-    @apply content-[''] absolute right-full -top-1 w-3 h-0.5 bg-primary/50;
+    @apply absolute left-0 w-full border-t border-dashed border-secondary-foreground/20;
   }
   
   .water-bottle-marker-label {
-    @apply absolute -top-3 -right-9 text-xs text-muted-foreground;
+    @apply absolute -left-12 -top-3 text-xs text-muted-foreground;
   }
   
-  /* New: Circular Progress */  
+  /* Stat Cards - Enhanced */
+  .stats-main {
+    @apply grid grid-cols-2 gap-3;
+  }
+  
+  .stat-card {
+    @apply flex items-center gap-3 bg-card rounded-lg p-3 shadow-sm;
+  }
+  
+  .stat-icon {
+    @apply flex-shrink-0 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-lg;
+  }
+  
+  .stat-value {
+    @apply font-bold text-lg;
+  }
+  
+  .stat-label {
+    @apply text-xs text-muted-foreground;
+  }
+  
+  .stats-secondary {
+    @apply grid grid-cols-3 gap-3;
+  }
+  
+  .stat-card-mini {
+    @apply bg-card rounded-lg p-2 text-center shadow-sm;
+  }
+  
+  .stat-value-mini {
+    @apply font-semibold text-sm;
+  }
+  
+  /* Drink Controls - New */
+  .drink-control {
+    @apply px-4 space-y-4 mb-4;
+  }
+  
+  .drink-types {
+    @apply flex justify-center gap-2 mb-4;
+  }
+  
+  .drink-type-btn {
+    @apply flex flex-col items-center justify-center p-2 rounded-lg bg-secondary text-foreground transition-all hover:bg-secondary/80;
+  }
+  
+  .drink-type-btn.active {
+    @apply bg-primary/10 text-primary;
+  }
+  
+  .drink-icon {
+    @apply text-xl mb-1;
+  }
+  
+  .quick-add-buttons {
+    @apply grid grid-cols-3 gap-2;
+  }
+  
+  .water-btn {
+    @apply relative overflow-hidden rounded-lg py-3 px-2 text-center bg-primary/10 text-primary font-medium transition-all hover:bg-primary/20 active:scale-95;
+  }
+  
+  .btn-ripple {
+    @apply absolute inset-0 pointer-events-none;
+  }
+  
+  .custom-amount-container {
+    @apply mt-4;
+  }
+  
+  .btn-custom {
+    @apply w-full py-2 px-4 rounded-lg bg-secondary text-foreground flex items-center justify-center gap-2 transition-all hover:bg-secondary/80 active:scale-95;
+  }
+  
+  .custom-input {
+    @apply mt-2 space-y-2;
+  }
+  
+  .form-control {
+    @apply block w-full px-3 py-2 bg-background border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors;
+  }
+  
+  .custom-input-buttons {
+    @apply flex gap-2;
+  }
+  
+  .btn-primary {
+    @apply py-2 px-4 bg-primary text-primary-foreground rounded-md shadow-sm hover:bg-primary/90 transition-colors active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply py-2 px-4 bg-secondary text-secondary-foreground rounded-md shadow-sm hover:bg-secondary/80 transition-colors active:scale-95;
+  }
+  
+  .btn-destructive {
+    @apply py-2 px-4 bg-destructive text-white rounded-md shadow-sm hover:bg-destructive/90 transition-colors active:scale-95;
+  }
+  
+  .btn-lg {
+    @apply py-3 px-6 text-base;
+  }
+  
+  /* Stats Tab - New */
+  .stats-container {
+    @apply p-4 space-y-6;
+  }
+  
+  .tab-title {
+    @apply text-xl font-bold mb-4;
+  }
+  
+  .section-title {
+    @apply text-base font-semibold text-foreground/80 mb-3;
+  }
+  
+  .stats-chart-container {
+    @apply bg-card rounded-lg p-4 shadow-sm mb-4;
+  }
+  
+  .chart-area {
+    @apply h-48;
+  }
+  
+  .activity-log-container {
+    @apply bg-card rounded-lg divide-y divide-border shadow-sm overflow-hidden;
+  }
+  
+  /* Insights Tab - New */
+  .insights-container {
+    @apply p-4 space-y-6;
+  }
+  
+  .insights-cards {
+    @apply grid grid-cols-2 gap-4 mb-4;
+  }
+  
+  .insight-card {
+    @apply bg-card rounded-lg p-4 shadow-sm;
+  }
+  
+  .insight-header {
+    @apply flex items-center gap-2 text-sm text-muted-foreground mb-2;
+  }
+  
+  .insight-value {
+    @apply mb-3;
+  }
+  
+  .circular-progress-container {
+    @apply relative h-16;
+  }
+  
   .circular-progress {
-    @apply relative w-full h-full flex items-center justify-center;
+    @apply relative w-full h-full;
   }
   
-  .circular-progress svg {
-    @apply transform -rotate-90;
+  .progress-circle {
+    @apply absolute inset-0 bg-primary/20 rounded-full;
+    clip-path: circle(50% at center);
   }
   
-  .circular-progress-bg {
-    @apply fill-none stroke-secondary stroke-[8px];
+  .progress-indicator {
+    @apply relative h-2 mt-2 bg-primary/20 rounded-full overflow-hidden;
   }
   
-  .circular-progress-fill {
-    @apply fill-none stroke-primary stroke-[8px] transition-all duration-1000 ease-out;
+  .progress-line {
+    @apply absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-300 ease-out;
   }
   
-  .circular-progress-text {
-    @apply absolute flex flex-col items-center justify-center;
+  .insight-analysis-card {
+    @apply bg-card rounded-lg p-4 shadow-sm;
   }
   
-  /* Progress Bar - Enhanced */
-  .progress-container {
-    @apply w-full h-3 bg-secondary rounded-full overflow-hidden;
+  .insight-content {
+    @apply text-sm mt-3;
   }
   
-  .progress-value {
-    @apply h-full bg-primary transition-all duration-500 ease-out;
+  /* Settings Tab - New */
+  .settings-container {
+    @apply p-4 space-y-6;
   }
   
-  /* Tabs - Enhanced */
-  .tabs {
-    @apply flex flex-col space-y-2;
+  .settings-section {
+    @apply mb-6;
   }
   
-  .tabs-list {
-    @apply flex border-b border-border mb-4;
-  }
-  
-  .tab-trigger {
-    @apply py-2 px-3 border-b-2 border-transparent font-medium text-muted-foreground hover:text-foreground transition-colors;
-  }
-  
-  .tab-trigger[data-state="active"] {
-    @apply border-primary text-foreground;
-  }
-  
-  .tab-content {
-    @apply pt-2;
-  }
-  
-  /* Quick Add Buttons - Enhanced with feedback animation */
-  .water-amount {
-    @apply relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-water text-sm font-medium text-water-foreground;
-  }
-  
-  /* Water Animation - Enhanced */
-  .water-drop {
-    @apply w-8 h-8 text-water animate-wave;
-  }
-
-  /* New: Streak display */
-  .streak-display {
-    @apply p-1 px-2 rounded-full bg-secondary text-sm font-medium;
-  }
-  
-  .streak-flame {
-    @apply mr-1 animate-pulse;
-  }
-  
-  /* Toast - Enhanced with animations */
-  .toast {
-    @apply fixed bottom-4 right-4 z-50 flex max-w-md items-center justify-between space-x-2 overflow-hidden 
-    rounded-md border p-4 shadow-lg animate-toast-in bg-card text-foreground;
-  }
-  
-  /* New: Achievement Badge */
-  .achievement-badge {
-    @apply relative flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 
-    hover:scale-110 transition-transform cursor-help;
-  }
-  
-  .achievement-badge-icon {
-    @apply text-primary text-lg;
-  }
-  
-  .achievement-locked {
-    @apply opacity-40 grayscale;
-  }
-  
-  /* Form Controls - Enhanced */
   .form-item {
     @apply mb-4;
   }
   
   .form-label {
-    @apply block font-medium mb-2;
+    @apply block text-sm font-medium text-foreground mb-1;
   }
   
-  .form-control {
-    @apply w-full p-2 rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/25;
+  .form-toggle {
+    @apply flex items-center justify-between py-2;
   }
   
-  .form-description {
-    @apply text-muted-foreground text-xs;
+  .toggle-label {
+    @apply text-sm;
   }
   
-  /* Switch */
+  .toggle-control {
+    @apply relative;
+  }
+  
   .switch {
     @apply sr-only;
   }
   
-  /* New Stats Display */
-  .stat-card {
-    @apply flex flex-col items-center justify-center bg-secondary p-2 rounded-md;
+  .switch-label {
+    @apply block w-11 h-6 rounded-full bg-secondary cursor-pointer relative transition-colors;
   }
   
-  .stat-value {
-    @apply font-semibold text-lg;
+  .switch-label::after {
+    content: '';
+    @apply absolute left-1 top-1 w-4 h-4 rounded-full bg-muted-foreground transition-transform duration-200;
   }
   
-  .stat-label {
-    @apply text-muted-foreground text-xs;
+  .switch:checked + .switch-label {
+    @apply bg-primary;
   }
   
-  .stat-trend {
-    @apply flex items-center text-xs;
+  .switch:checked + .switch-label::after {
+    @apply transform translate-x-5 bg-white;
   }
   
-  .stat-trend-up {
-    @apply text-green-500;
+  .theme-selector {
+    @apply flex gap-3;
   }
   
-  .stat-trend-down {
-    @apply text-red-500;
+  .theme-btn {
+    @apply flex flex-col items-center justify-center p-3 rounded-lg bg-secondary text-foreground transition-all hover:bg-secondary/80 flex-1;
+  }
+  
+  .theme-btn[data-active="true"] {
+    @apply bg-primary/10 text-primary;
+  }
+  
+  .theme-icon {
+    @apply text-xl mb-1;
+  }
+  
+  .settings-actions {
+    @apply mt-8 space-y-4;
+  }
+  
+  .settings-secondary-actions {
+    @apply grid grid-cols-2 gap-3 mt-3;
+  }
+  
+  /* Toast Notifications */
+  .toast {
+    @apply fixed bottom-0 right-0 mb-4 mr-4 p-3 rounded-lg shadow-lg bg-white dark:bg-card max-w-sm transform translate-y-full opacity-0 transition-all duration-300 border-l-4 flex items-center;
+  }
+  
+  .toast.show {
+    @apply translate-y-0 opacity-100;
+  }
+  
+  .toast-success {
+    @apply border-l-green-500;
+  }
+  
+  .toast-error {
+    @apply border-l-red-500;
+  }
+  
+  .toast-warning {
+    @apply border-l-amber-500;
+  }
+  
+  .toast-info {
+    @apply border-l-primary;
   }
 }
 
-/* UTILITY CLASSES */
-@layer utilities {
-  .center {
-    @apply flex items-center justify-center;
-  }
-
-  .ripple {
-    @apply absolute rounded-full bg-white/40 scale-0 animate-ripple pointer-events-none;
-  }
-  
-  .glass {
-    @apply backdrop-blur-md bg-white/30 dark:bg-black/30;
-  }
-  
-  .scrollbar-hidden {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hidden::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* ANIMATIONS */
+/* Animations */
 @keyframes wave {
   0% {
-    transform: translateX(0) translateZ(0) scaleY(1);
+    transform: translateX(0) translateY(0);
+  }
+  25% {
+    transform: translateX(-25%) translateY(-5px);
   }
   50% {
-    transform: translateX(-25%) translateZ(0) scaleY(0.8);
+    transform: translateX(-50%) translateY(0);
+  }
+  75% {
+    transform: translateX(-75%) translateY(-5px);
   }
   100% {
-    transform: translateX(-50%) translateZ(0) scaleY(1);
+    transform: translateX(-100%) translateY(0);
   }
 }
 
 @keyframes ripple {
-  to {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
     transform: scale(4);
     opacity: 0;
   }
@@ -379,12 +517,16 @@
 
 @keyframes bounceIn {
   0% {
-    opacity: 0;
     transform: scale(0.8);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1);
+    opacity: 1;
   }
   100% {
-    opacity: 1;
     transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -396,15 +538,17 @@
   animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 
-/* Bounce animation for dialog */
 @keyframes bounce-in {
   0% {
     transform: scale(0.8);
     opacity: 0;
   }
-  70% {
+  50% {
     transform: scale(1.05);
     opacity: 1;
+  }
+  70% {
+    transform: scale(0.95);
   }
   100% {
     transform: scale(1);
@@ -413,113 +557,53 @@
 }
 
 .animate-bounce-in {
-  animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Style cho nút khẩn cấp */
 .emergency-recovery-button {
-  position: fixed;
-  bottom: 8px;
-  right: 8px;
-  background-color: #ef4444;
-  color: white;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  z-index: 9999;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  @apply fixed bottom-4 right-4 bg-destructive text-white text-xs px-2 py-1 rounded opacity-70 hover:opacity-100 z-50 cursor-pointer transition-opacity shadow-lg;
 }
 
 .emergency-recovery-button:hover {
-  opacity: 1;
+  @apply opacity-100;
 }
 
-/* Style hiệu ứng sóng nước cải tiến */
+/* Water bottle animation */
 .water-fill {
-  position: relative;
-  border-radius: 0 0 20px 20px;
-  background-color: var(--color-primary);
-  width: 100%;
-  height: 0%;
-  bottom: 0;
-  transition: height 0.5s ease-out;
-  overflow: hidden;
+  transition: height 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Water wave animation */
+@keyframes wave {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+  100% {
+    transform: translateX(-100%) translateY(0);
+  }
 }
 
 .water-wave {
-  position: absolute;
-  top: -10px;
-  left: 0;
-  width: 200%;
-  height: 100%;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 88.7'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v31.8h800v-.2-31.6z' fill='%23FFF' fill-opacity='0.2'/%3E%3C/svg%3E");
-  background-position: 0 bottom;
-  background-repeat: repeat-x;
-  animation: wave var(--water-wave-speed) infinite linear;
+  animation: wave 2s infinite linear;
 }
 
-/* Overlay khi đứng app */
+/* App Frozen Overlay */
 .app-frozen-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 2rem;
-  text-align: center;
+  @apply fixed inset-0 bg-background/90 dark:bg-background/95 flex flex-col items-center justify-center gap-4 text-center p-6 z-[9999];
+  backdrop-filter: blur(4px);
+}
+
+.app-frozen-overlay h2 {
+  @apply text-xl font-bold text-destructive;
+}
+
+.app-frozen-overlay p {
+  @apply text-sm text-foreground mb-4;
 }
 
 .app-frozen-overlay button {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-}
-
-/* Toasts cải tiến */
-.toast {
-  position: relative;
-  padding: 0.75rem 1rem;
-  color: white;
-  border-radius: 0.375rem;
-  margin-bottom: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  opacity: 0;
-  transform: translateY(1rem);
-  transition: opacity 0.3s, transform 0.3s;
-  max-width: 100%;
-  width: 300px;
-}
-
-.toast.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.toast-success {
-  background-color: #10b981;
-}
-
-.toast-error {
-  background-color: #ef4444;
-}
-
-.toast-warning {
-  background-color: #f59e0b;
-}
-
-.toast-info {
-  background-color: #3b82f6;
+  @apply px-4 py-2 bg-primary text-primary-foreground rounded-md shadow-sm hover:bg-primary/90 transition-colors;
 } 
